@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1B2F7E),
+      backgroundColor: const Color.fromARGB(255, 17, 37, 116),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -51,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment
                   .stretch, //columna que se estira a lo ancho de la pantalla
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 150),
                 const Text(
                   'AulaLibre',
                   textAlign: TextAlign.center,
@@ -144,80 +144,173 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Correo institucional',
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        //campo contraseña
-                        obscureText:
-                            !contrasenaVisible, //esto es para ocultar el texto de la contraseña
-                        //si contrasenaVisible es true, entonces el texto se muestra, si es false, entonces el texto se oculta
-                        decoration: InputDecoration(
-                          hintText: 'Contraseña',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                contrasenaVisible = !contrasenaVisible;
-                              });
-                            },
-                            child: Icon(
-                              contrasenaVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                  child: pestanaSeleccionada == 0
+                      ? Column(
+                          children: [
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Correo institucional',
+                                prefixIcon: const Icon(Icons.email_outlined),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: GestureDetector(
-                          onTap: () {},
-                          child: const Text(
-                            '¿Olvidaste tu contraseña?',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w500,
+                            const SizedBox(height: 16),
+
+                            TextField(
+                              obscureText: !contrasenaVisible,
+                              decoration: InputDecoration(
+                                hintText: 'Contraseña',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      contrasenaVisible = !contrasenaVisible;
+                                    });
+                                  },
+                                  child: Icon(
+                                    contrasenaVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
-                          ),
+
+                            const SizedBox(height: 8),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () {},
+                                child: const Text(
+                                  '¿Olvidaste tu contraseña?',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                minimumSize: const Size(double.infinity, 50),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Iniciar sesión',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Correo institucional',
+                                prefixIcon: const Icon(Icons.email_outlined),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            TextField(
+                              obscureText: !contrasenaVisible,
+                              decoration: InputDecoration(
+                                hintText: 'Contraseña',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      contrasenaVisible = !contrasenaVisible;
+                                    });
+                                  },
+                                  child: Icon(
+                                    contrasenaVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            TextField(
+                              obscureText: !contrasenaVisible,
+                              decoration: InputDecoration(
+                                hintText: 'Confirmar contraseña',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      contrasenaVisible = !contrasenaVisible;
+                                    });
+                                  },
+                                  child: Icon(
+                                    contrasenaVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                minimumSize: const Size(double.infinity, 50),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Crear cuenta',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Iniciar sesión',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ], //contenedor blanco
-                  ),
-                ),
+                ), //aquí termina el cuadrado blanco
               ],
             ),
           ),
