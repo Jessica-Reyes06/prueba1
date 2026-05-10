@@ -1,10 +1,285 @@
 import 'package:flutter/material.dart';
+import 'mapa_file.dart'; //para ir a la pantalla del mapa
 
-class HomePage extends StatelessWidget {
+class Salon {
+  final String nombre; //final: una vez asignado el valor no puede cambiar
+  final String edificio;
+  final bool tieneClima;
+  final int personas;
+  final bool disponible;
+  final bool favorito;
+
+  const Salon({
+    required this.nombre, //obliga a que cuando crees un objeto Salon le pases ese atributo obligatoriamente
+    required this.edificio,
+    required this.tieneClima,
+    required this.personas,
+    required this.disponible,
+    required this.favorito,
+  });
+}
+
+class HomePage extends StatefulWidget {
+  // apariencia fija
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() {
+    //método que conecta ambas clases
+    return _HomePageState();
+  }
+}
+
+class _HomePageState extends State<HomePage> {
+  // el estado que cambia y los atributos que cambian
+  String edificioSeleccionado = 'Todos';
+  int paginaActual = 0;
+  late List<Widget>
+  paginas; //late: "Esta variable se va a inicializar después, no en el momento de declararla"
+
+  //SALONES ESTÁTICOS PARA VISUALIZAR DISEÑO
+  final List<Salon> salones = [
+    const Salon(
+      nombre: 'E-105',
+      edificio: 'Edificio E',
+      tieneClima: true,
+      personas: 0,
+      disponible: true,
+      favorito: true,
+    ),
+    const Salon(
+      nombre: 'A-201',
+      edificio: 'Edificio A',
+      tieneClima: false,
+      personas: 2,
+      disponible: true,
+      favorito: false,
+    ),
+  ];
+
+  @override
+  void initState() {
+    //método especial que se ejecuta una sola vez cuando el widget se crea por primera vez
+    super
+        .initState(); //llama al initState de la clase padre antes de ejecutar nuestro código
+    paginas = [_paginaSalones(), const MapaPage()];
+  }
+
+  Widget _botonEdificio(String nombre) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          //setState le dice a Flutter que algo cambió y que debe redibujar la pantalla
+          edificioSeleccionado = nombre;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: edificioSeleccionado == nombre
+              ? const Color.fromARGB(255, 8, 73, 126)
+              : Colors
+                    .white, //operador ternario para cambiar el color del botón seleccionado
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Center(
+          child: Text(
+            nombre,
+            style: TextStyle(
+              color: edificioSeleccionado == nombre
+                  ? Colors.white
+                  : Colors
+                        .black, //operador ternario para cambiar el color del texto
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tarjetaSalon(Salon salon) {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    salon.nombre,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(salon.edificio),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.ac_unit,
+                        color: salon.tieneClima
+                            ? Colors.blue
+                            : Colors
+                                  .red, //operador ternario para cambiar el color del icono
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Clima',
+                        style: TextStyle(
+                          color: salon.tieneClima
+                              ? Colors.blue
+                              : Colors
+                                    .red, //operador ternario para cambiar el color del texto
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.group, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${salon.personas}',
+                      ), //interpolación de strings para mostrar el valor del atributo
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.end, //alinea los hijos hacia la derecha
+              children: [
+                Text(
+                  salon.disponible
+                      ? 'Disponible ahora'
+                      : 'No disponible', //operador ternario para mostrar el estado del salón
+                  style: TextStyle(
+                    color: salon.disponible ? Colors.green : Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Icon(
+                  salon.favorito
+                      ? Icons.star
+                      : Icons
+                            .star_border, //operador ternario para mostrar la estrella
+                  color: salon.favorito ? Colors.amber : Colors.grey,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _paginaSalones() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment
+            .start, //alinea todos los hijos de la Column hacia la izquierda
+        children: [
+          const Text(
+            'AulaLibre',
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'Buscar edificio o salón...',
+              prefixIcon: const Icon(Icons.search),
+              filled:
+                  true, //bool que le dice a Flutter si debe aplicar o no el fillColor
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none, //sin borde visible
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              // lista de widgets con scroll
+              scrollDirection: Axis.horizontal, //scroll horizontal
+              children: [
+                _botonEdificio('Todos'),
+                _botonEdificio('A'),
+                _botonEdificio('E'),
+                _botonEdificio('B'),
+                _botonEdificio('J'),
+                _botonEdificio('K'),
+                _botonEdificio('W'),
+                _botonEdificio('X'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: salones
+                  .length, //le dice a Flutter cuántos elementos tiene la lista
+              itemBuilder: (context, index) {
+                //se ejecuta por cada elemento de la lista
+                return _tarjetaSalon(
+                  salones[index],
+                ); //retorna el widget del salón
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(body: const Center(child: Text('Pantalla principal')));
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: const Color.fromARGB(255, 8, 73, 126),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: paginaActual, //indica qué página está activa
+        onTap: (index) {
+          setState(() {
+            paginaActual = index; //cambia la página activa
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Salones'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Mapa'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+        ],
+      ),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: paginas[paginaActual], //muestra la página activa
+      ),
+    );
   }
 }

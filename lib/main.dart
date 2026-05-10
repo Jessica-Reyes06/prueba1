@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
+import 'package:flutter/material.dart';
+import 'package:prueba1/pages/home_page.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
 
 void main() {
   runApp(const MyApp());
@@ -35,10 +36,9 @@ class LoginPage extends StatefulWidget {
   }
 }
 
-int pestanaSeleccionada = 0;
-bool contrasenaVisible = false;
-
 class _LoginPageState extends State<LoginPage> {
+  int pestanaSeleccionada = 0;
+  bool contrasenaVisible = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -201,7 +201,18 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 24),
 
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  //administra navegación entre pantallas y permite cambiar de una pantalla a otra al pulsar el botón
+                                  //push es un metodo estatico de la clase Navigator
+                                  context,
+                                  MaterialPageRoute(
+                                    //clase que define la transición entre pantallas
+                                    builder: (context) =>
+                                        const HomePage(), // => indica retorno
+                                  ),
+                                );
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,
                                 minimumSize: const Size(double.infinity, 50),
