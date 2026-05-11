@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'mapa_file.dart'; //para ir a la pantalla del mapa
+import 'perfil_page.dart'; //para ir a la pantalla del perfil
 
 class Salon {
   final String nombre; //final: una vez asignado el valor no puede cambiar
@@ -62,7 +63,7 @@ class _HomePageState extends State<HomePage> {
     //método especial que se ejecuta una sola vez cuando el widget se crea por primera vez
     super
         .initState(); //llama al initState de la clase padre antes de ejecutar nuestro código
-    paginas = [_paginaSalones(), const MapaPage()];
+    paginas = [_paginaSalones(), const MapaPage(), const PerfilPage()];
   }
 
   Widget _botonEdificio(String nombre) {
