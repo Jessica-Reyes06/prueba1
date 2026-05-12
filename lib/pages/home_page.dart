@@ -3,6 +3,7 @@ import 'mapa_file.dart'; //para ir a la pantalla del mapa
 import 'perfil_page.dart'; //para ir a la pantalla del perfil
 import 'detalle_salon_page.dart'; //para ir a la pantalla del detalle del salón
 import 'salon_model.dart'; //para usar la clase Salon y crear objetos de salón
+import 'reportar_salon.dart';
 
 class HomePage extends StatefulWidget {
   // apariencia fija
@@ -252,7 +253,16 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) => const ReportarSalonSheet(),
+          );
+        },
         backgroundColor: const Color.fromARGB(255, 8, 73, 126),
         child: const Icon(Icons.add, color: Colors.white),
       ),
