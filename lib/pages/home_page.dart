@@ -1,24 +1,8 @@
 import 'package:flutter/material.dart';
 import 'mapa_file.dart'; //para ir a la pantalla del mapa
 import 'perfil_page.dart'; //para ir a la pantalla del perfil
-
-class Salon {
-  final String nombre; //final: una vez asignado el valor no puede cambiar
-  final String edificio;
-  final bool tieneClima;
-  final int personas;
-  final bool disponible;
-  final bool favorito;
-
-  const Salon({
-    required this.nombre, //obliga a que cuando crees un objeto Salon le pases ese atributo obligatoriamente
-    required this.edificio,
-    required this.tieneClima,
-    required this.personas,
-    required this.disponible,
-    required this.favorito,
-  });
-}
+import 'detalle_salon_page.dart'; //para ir a la pantalla del detalle del salón
+import 'salon_model.dart'; //para usar la clase Salon y crear objetos de salón
 
 class HomePage extends StatefulWidget {
   // apariencia fija
@@ -100,9 +84,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _tarjetaSalon(Salon salon) {
+  Widget _tarjetaSalon(BuildContext context, Salon salon) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetalleSalonPage(salon: salon),
+          ),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -246,6 +237,7 @@ class _HomePageState extends State<HomePage> {
               itemBuilder: (context, index) {
                 //se ejecuta por cada elemento de la lista
                 return _tarjetaSalon(
+                  context,
                   salones[index],
                 ); //retorna el widget del salón
               },
