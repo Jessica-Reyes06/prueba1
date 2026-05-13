@@ -20,8 +20,6 @@ class _HomePageState extends State<HomePage> {
   // el estado que cambia y los atributos que cambian
   String edificioSeleccionado = 'Todos';
   int paginaActual = 0;
-  late List<Widget>
-  paginas; //late: "Esta variable se va a inicializar después, no en el momento de declararla"
 
   //SALONES ESTÁTICOS PARA VISUALIZAR DISEÑO
   final List<Salon> salones = [
@@ -43,12 +41,15 @@ class _HomePageState extends State<HomePage> {
     ),
   ];
 
-  @override
-  void initState() {
-    //método especial que se ejecuta una sola vez cuando el widget se crea por primera vez
-    super
-        .initState(); //llama al initState de la clase padre antes de ejecutar nuestro código
-    paginas = [_paginaSalones(), const MapaPage(), const PerfilPage()];
+  List<Salon> get salonesFiltrados {
+    if (edificioSeleccionado == 'Todos') {
+      return salones;
+    }
+
+    return salones.where((salon) {
+      return salon.edificio == 'Edificio $edificioSeleccionado' ||
+          salon.edificio.contains('Edificio $edificioSeleccionado');
+    }).toList();
   }
 
   Widget _botonEdificio(String nombre) {
@@ -232,21 +233,35 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ListView.builder(
-              itemCount: salones
-                  .length, //le dice a Flutter cuántos elementos tiene la lista
-              itemBuilder: (context, index) {
-                //se ejecuta por cada elemento de la lista
-                return _tarjetaSalon(
-                  context,
-                  salones[index],
-                ); //retorna el widget del salón
-              },
-            ),
+            child: salonesFiltrados.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No hay salones disponibles para este edificio.',
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: salonesFiltrados.length,
+                    itemBuilder: (context, index) {
+                      return _tarjetaSalon(context, salonesFiltrados[index]);
+                    },
+                  ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _paginaActiva() {
+    switch (paginaActual) {
+      case 0:
+        return _paginaSalones();
+      case 1:
+        return const MapaPage();
+      case 2:
+        return const PerfilPage();
+      default:
+        return _paginaSalones();
+    }
   }
 
   @override
@@ -280,9 +295,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: paginas[paginaActual], //muestra la página activa
-      ),
+      body: SafeArea(child: _paginaActiva()),
     );
   }
 }

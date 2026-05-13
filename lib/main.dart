@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:prueba1/logica/autenticacion.dart';
 import 'package:prueba1/pages/home_page.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
 
 void main() {
@@ -39,6 +40,16 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   int pestanaSeleccionada = 0;
   bool contrasenaVisible = false;
+
+  final TextEditingController controladorCorreo = TextEditingController();
+  final TextEditingController controladorContrasena = TextEditingController();
+  final TextEditingController controladorConfirmarContrasena =
+      TextEditingController();
+
+  // : es un parametro nombrado
+  Autenticacion autenticacion =
+      Autenticacion(); //se crea una instancia de la clase Autenticacion para usar sus métodos en esta clase
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,7 +158,9 @@ class _LoginPageState extends State<LoginPage> {
                   child: pestanaSeleccionada == 0
                       ? Column(
                           children: [
+                            //CAMPO DE CORREO
                             TextField(
+                              controller: controladorCorreo,
                               decoration: InputDecoration(
                                 hintText: 'Correo institucional',
                                 prefixIcon: const Icon(Icons.email_outlined),
@@ -158,8 +171,10 @@ class _LoginPageState extends State<LoginPage> {
                             ),
 
                             const SizedBox(height: 16),
-
+                            //CAMPO DE CONTRASEÑA
                             TextField(
+                              controller: controladorContrasena,
+                              //“este TextField será administrado por este TextEditingController”
                               obscureText: !contrasenaVisible,
                               decoration: InputDecoration(
                                 hintText: 'Contraseña',
@@ -199,19 +214,31 @@ class _LoginPageState extends State<LoginPage> {
                             ),
 
                             const SizedBox(height: 24),
-
+                            //BOTÓN DE INICIAR SESIÓN
                             ElevatedButton(
                               onPressed: () {
-                                Navigator.push(
-                                  //administra navegación entre pantallas y permite cambiar de una pantalla a otra al pulsar el botón
-                                  //push es un metodo estatico de la clase Navigator
-                                  context,
-                                  MaterialPageRoute(
-                                    //clase que define la transición entre pantallas
-                                    builder: (context) =>
-                                        const HomePage(), // => indica retorno
-                                  ),
+                                String correo = controladorCorreo.text;
+                                String contrasena = controladorContrasena.text;
+                                bool resultado = autenticacion.iniciarSesion(
+                                  correo,
+                                  contrasena,
                                 );
+                                if (resultado) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Campos vacíos. Por favor, ingresa tu correo y contraseña.',
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const HomePage(),
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,
@@ -237,6 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                       : Column(
                           children: [
                             TextField(
+                              controller: controladorCorreo,
                               decoration: InputDecoration(
                                 hintText: 'Correo institucional',
                                 prefixIcon: const Icon(Icons.email_outlined),
@@ -249,6 +277,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 16),
 
                             TextField(
+                              controller: controladorContrasena,
                               obscureText: !contrasenaVisible,
                               decoration: InputDecoration(
                                 hintText: 'Contraseña',
@@ -274,6 +303,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 16),
 
                             TextField(
+                              controller: controladorConfirmarContrasena,
                               obscureText: !contrasenaVisible,
                               decoration: InputDecoration(
                                 hintText: 'Confirmar contraseña',
@@ -297,9 +327,68 @@ class _LoginPageState extends State<LoginPage> {
                             ),
 
                             const SizedBox(height: 24),
-
+                            //°°°°°°°BOTÓN DE REGISTRARSE°°°°°°°°°|
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                String contrasena = controladorContrasena.text;
+
+                                bool contrasenaValida = autenticacion
+                                    .contrasenaSegura(contrasena);
+
+                                String correo = controladorCorreo.text;
+
+                                String confirmarContrasena =
+                                    controladorConfirmarContrasena.text;
+
+                                bool correoValido = autenticacion.validarCorreo(
+                                  correo,
+                                );
+                                if (!correoValido) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Debes usar un correo institucional',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (!contrasenaValida) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'La contraseña debe tener al menos 8 caracteres, una letra mayúscula y un número.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (contrasena != confirmarContrasena) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Las contraseñas no coinciden',
+                                      ),
+                                    ),
+                                  );
+
+                                  return;
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      '¡Cuenta creada correctamente!',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const HomePage(),
+                                  ),
+                                );
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,
                                 minimumSize: const Size(double.infinity, 50),
@@ -310,6 +399,7 @@ class _LoginPageState extends State<LoginPage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
+
                               child: const Text(
                                 'Crear cuenta',
                                 style: TextStyle(
