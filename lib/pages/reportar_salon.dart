@@ -33,12 +33,14 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          48 + MediaQuery.of(context).padding.top,
+          24,
+          24 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -67,7 +69,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
               hint: const Text('Seleccionar edificio'),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -91,7 +93,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
               hint: const Text('Seleccionar salón'),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -125,7 +127,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       decoration: BoxDecoration(
                         color: climaFunciona == true
                             ? Colors.blue.shade50
-                            : Colors.grey.shade100,
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: climaFunciona == true
@@ -135,8 +137,8 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.check_circle_outline),
-                          SizedBox(width: 8),
+                          Icon(Icons.check_circle_outline, size: 18, color: Colors.green),
+                          SizedBox(width: 6),
                           Text('Funciona'),
                         ],
                       ),
@@ -156,7 +158,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       decoration: BoxDecoration(
                         color: climaFunciona == false
                             ? Colors.blue.shade50
-                            : Colors.grey.shade100,
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: climaFunciona == false
@@ -166,8 +168,8 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.cancel_outlined),
-                          SizedBox(width: 8),
+                          Icon(Icons.cancel_outlined, size: 18, color: Colors.red),
+                          SizedBox(width: 6),
                           Text('No funciona'),
                         ],
                       ),
@@ -177,7 +179,6 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            const SizedBox(height: 16),
             const Text(
               'Fecha y hora',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -186,7 +187,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -236,6 +237,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
               'Se registrará para este horario',
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
+            const SizedBox(height: 16),
             const Text(
               'Comentario (opcional)',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -246,8 +248,9 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Ej. Está vacío, hay 3 personas...',
+                hintStyle: TextStyle(color: Colors.black54),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,

@@ -185,7 +185,10 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                               ),
                               const Text(
                                 'L24020369@veracruz.tecnm.mx',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),

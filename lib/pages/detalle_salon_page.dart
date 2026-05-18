@@ -12,6 +12,7 @@ class DetalleSalonPage extends StatefulWidget {
 }
 
 class _DetalleSalonPageState extends State<DetalleSalonPage> {
+  bool estoyAqui=false;
   final TextEditingController comentarioController = TextEditingController();
   List<Map<String, String>> comentarios = [
     {'texto': 'Estamos estudiando', 'tiempo': 'Hace 5 min'},
@@ -93,7 +94,7 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue,
+                                      color: Colors.blueGrey.shade600,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: const Icon(
@@ -103,7 +104,7 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text('Personas'),
+                                  const Text('Personas', style: TextStyle(color: Colors.black54)),
                                   Text(
                                     '${widget.salon.personas}',
                                     style: const TextStyle(
@@ -118,18 +119,8 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: widget.salon.tieneClima
-                                          ? const Color.fromARGB(
-                                              255,
-                                              17,
-                                              78,
-                                              128,
-                                            )
-                                          : const Color.fromARGB(
-                                              255,
-                                              139,
-                                              22,
-                                              13,
-                                            ),
+                                          ? Colors.blueAccent
+                                          : Colors.red.shade700,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: const Icon(
@@ -139,15 +130,15 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text('Clima'),
+                                  const Text('Clima', style: TextStyle(color: Colors.black54)),
                                   Text(
                                     widget.salon.tieneClima
                                         ? 'Funciona'
                                         : 'No funciona',
                                     style: TextStyle(
                                       color: widget.salon.tieneClima
-                                          ? Colors.black
-                                          : Colors.red,
+                                          ? Colors.green
+                                          : Colors.redAccent,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -157,39 +148,40 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: () async {setState(() => estoyAqui = !estoyAqui);},
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                9,
-                                108,
-                                188,
-                              ),
+                              backgroundColor: estoyAqui 
+                                ? Colors.green.shade600 
+                                : Colors.blue,
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             icon: const Icon(Icons.check, color: Colors.white),
-                            label: const Text(
-                              'Estoy aquí',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            label: estoyAqui
+                              ? const Text(
+                                  'Estoy aquí',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : const Text(
+                                  'Marcar que estoy aquí',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton.icon(
                             onPressed: () {},
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                159,
-                                33,
-                                25,
-                              ),
+                              backgroundColor: Colors.red.shade600,
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:prueba1/logica/autenticacion.dart';
-import 'package:prueba1/pages/home_page.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
 
-void main() {
+import 'package:prueba1/pages/home_page.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
+import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: ".env");
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  ); // Inicializa la conexión con Supabase 
+
   runApp(const MyApp());
 } // La función main es el punto de entrada de la aplicación. Aquí se llama a runApp para iniciar la aplicación y se pasa una instancia de MyApp como argumento.
+
+// Función para validar que la contraseña sea segura
+bool contrasenaSegura(String contrasena) {
+  RegExp expresion = RegExp(r'^(?=.*[A-Z])(?=.*[0-9])[a-zA-Z0-9]{8,}$');
+  return expresion.hasMatch(contrasena);
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -45,10 +62,6 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController controladorContrasena = TextEditingController();
   final TextEditingController controladorConfirmarContrasena =
       TextEditingController();
-
-  // : es un parametro nombrado
-  Autenticacion autenticacion =
-      Autenticacion(); //se crea una instancia de la clase Autenticacion para usar sus métodos en esta clase
 
   @override
   Widget build(BuildContext context) {
@@ -219,11 +232,8 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: () {
                                 String correo = controladorCorreo.text;
                                 String contrasena = controladorContrasena.text;
-                                bool resultado = autenticacion.iniciarSesion(
-                                  correo,
-                                  contrasena,
-                                );
-                                if (resultado) {
+                                
+                                if (correo.isEmpty || contrasena.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
@@ -331,29 +341,11 @@ class _LoginPageState extends State<LoginPage> {
                             ElevatedButton(
                               onPressed: () {
                                 String contrasena = controladorContrasena.text;
-
-                                bool contrasenaValida = autenticacion
-                                    .contrasenaSegura(contrasena);
-
-                                String correo = controladorCorreo.text;
-
+                                //String correo = controladorCorreo.text;
                                 String confirmarContrasena =
                                     controladorConfirmarContrasena.text;
 
-                                bool correoValido = autenticacion.validarCorreo(
-                                  correo,
-                                );
-                                if (!correoValido) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Debes usar un correo institucional',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (!contrasenaValida) {
+                                if (!contrasenaSegura(contrasena)) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
