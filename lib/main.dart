@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:prueba1/pages/home_page.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
 import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:prueba1/logica/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,12 +18,6 @@ void main() async {
   runApp(const MyApp());
 } // La función main es el punto de entrada de la aplicación. Aquí se llama a runApp para iniciar la aplicación y se pasa una instancia de MyApp como argumento.
 
-// Función para validar que la contraseña sea segura
-bool contrasenaSegura(String contrasena) {
-  RegExp expresion = RegExp(r'^(?=.*[A-Z])(?=.*[0-9])[a-zA-Z0-9]{8,}$');
-  return expresion.hasMatch(contrasena);
-}
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   //StatelessWidget es una clase abstracta
@@ -32,17 +27,24 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      //estudiar poliorfismo
       title: 'AulaLibre',
-      debugShowCheckedModeBanner:
-          false, //esto es para quitar el banner de debug en la esquina superior derecha
-      home: const LoginPage(),
+      debugShowCheckedModeBanner: false,
+      home: _verificarSesion(), //LoginPage(),
     );
   }
 
-  //widget es el tipo de retorno (objeto de la clase Widget)
-  //buil es el metodo que se sobreescribe
-  //context es un objeto que contiene información sobre el árbol de widgets y se utiliza para acceder a temas, tamaños de pantalla, etc.
+  // Widget que verifica si hay sesión activa
+  Widget _verificarSesion() {
+    final AuthService auth = AuthService();
+    
+    // Si hay usuario logueado, va a HomePage
+    // Si no, va a LoginPage
+    if (auth.estaLogueado) {
+      return const HomePage();
+    } else {
+      return const LoginPage();
+    }
+  }
 }
 
 class LoginPage extends StatefulWidget {
@@ -57,11 +59,11 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   int pestanaSeleccionada = 0;
   bool contrasenaVisible = false;
-
+  
+  final AuthService auth = AuthService();
   final TextEditingController controladorCorreo = TextEditingController();
   final TextEditingController controladorContrasena = TextEditingController();
-  final TextEditingController controladorConfirmarContrasena =
-      TextEditingController();
+  final TextEditingController controladorConfirmarContrasena =TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: GestureDetector(
-                                onTap: () {},
+                                onTap: () {}, //Función para recuperar contraseña  
                                 child: const Text(
                                   '¿Olvidaste tu contraseña?',
                                   style: TextStyle(
@@ -241,13 +243,38 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     ),
                                   );
-                                } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const HomePage(),
-                                    ),
-                                  );
+                                } 
+                                else {
+                                  auth.login(email: correo, password: contrasena).then((response) {
+                                    if (response.session != null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('¡Inicio de sesión exitoso!'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const HomePage(),
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Error en inicio de sesión. Verifica tus credenciales.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }).catchError((error) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error en inicio de sesión: ${error.message}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  });
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -341,11 +368,10 @@ class _LoginPageState extends State<LoginPage> {
                             ElevatedButton(
                               onPressed: () {
                                 String contrasena = controladorContrasena.text;
-                                //String correo = controladorCorreo.text;
-                                String confirmarContrasena =
-                                    controladorConfirmarContrasena.text;
+                                String correo = controladorCorreo.text;
+                                String confirmarContrasena = controladorConfirmarContrasena.text;
 
-                                if (!contrasenaSegura(contrasena)) {
+                                if (!auth.contrasenaSegura(contrasena)) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
@@ -366,20 +392,36 @@ class _LoginPageState extends State<LoginPage> {
 
                                   return;
                                 }
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      '¡Cuenta creada correctamente!',
+                                auth.registrarUsuario(email: correo, password: contrasena).then((response) {
+                                  if (response.user != null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('¡Cuenta creada correctamente!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const HomePage(),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Error en registro. Verifica tus datos.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }).catchError((error) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error en registro: ${error.message}'),
+                                      backgroundColor: Colors.red,
                                     ),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const HomePage(),
-                                  ),
-                                );
+                                  );
+                                });
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,

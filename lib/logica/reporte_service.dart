@@ -12,12 +12,13 @@ class ReporteService {
     //required DateTime fecha,
     required String horaInicio,
     required String horaFin,
+    String? comentario,
   }) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;
 
     try {
-      await _supabase.from('reporte').insert({
+      final responseReporte = await _supabase.from('reporte').insert({
         'id_salon': idSalon,
         'id_estudiante': userId,
         'clima_funciona': climaFunciona,
@@ -26,7 +27,16 @@ class ReporteService {
         'hora_fin': horaFin,
         'esta_vacio': true,
         'total_alumnos': 0, // El trigger lo actualizará
-      });
+      }).select();
+
+      final reporteId =responseReporte[0]['id'] as int;
+      if (comentario != null && comentario.trim().isNotEmpty) {
+        await _supabase.from('comentario').insert({
+          'id_reporte': reporteId,
+          'id_estudiante': userId,
+          'comentario': comentario,
+        });
+      }
     } catch (e) {
       print('Error en crearReporte: $e');
       rethrow;
@@ -36,12 +46,28 @@ class ReporteService {
   // ESCUCHAR REPORTES ACTIVOS EN TIEMPO REAL
   // Solo muestra reportes que: esta_vacio=true y estén en el rango de hora actual
   // Solo un reporte por salón (el primero creado)
-  Stream<List<Map<String, dynamic>>> escucharReportesActivos() {
+  Stream<List<Map<String, dynamic>>> escucharReportesActivos(int? idEdificio) {
+    final userId = _supabase.auth.currentUser?.id;
+
     return _supabase
         .from('reporte')
         .stream(primaryKey: ['id'])
         .eq('esta_vacio', true)
-        .map((listaReportes) {
+        .asyncMap((listaReportes) async{
+          
+          //Obtener salones favoritos del usuario
+          List<int> salonesFavoritosIds = [];
+          if (userId != null) {
+            final favoritosData = await _supabase
+              .from('salones_favoritos')
+              .select('id_salon')
+              .eq('id_estudiante', userId);
+          
+            salonesFavoritosIds = favoritosData
+              .map((f) => f['id_salon'] as int)
+              .toList();
+          }
+
           // Filtrar por fecha de hoy
           final hoy = DateTime.now();
           final diaActual = hoy.toIso8601String().split('T')[0];
@@ -64,13 +90,37 @@ class ReporteService {
           for (var reporte in reportesHoy) {
             final idSalon = reporte['id_salon'] as int;
             if (!reportesPorSalon.containsKey(idSalon)) {
-              reportesPorSalon[idSalon] = reporte;
-            }
-          }
+              final salonMap = reporte['salon'] as Map<String, dynamic>?;
+              final edificioMap = salonMap?['edificio'] as Map<String, dynamic>?;
+              final idEdificioReporte = salonMap?['id_edificio'] as int?;
 
-          return reportesPorSalon.values.toList();
-        });
-  }
+              final esFavorito = salonesFavoritosIds.contains(idSalon);
+
+              if (idEdificio != null && idEdificioReporte != idEdificio) {
+                continue; // Se salta este reporte y va al siguiente
+              }
+              
+              //Vista salon
+              reportesPorSalon[idSalon] = {
+              'id': reporte['id'],
+              'id_salon': idSalon,
+              'clima_funciona': reporte['clima_funciona'],
+              //'fecha': reporte['fecha'],
+              'hora_inicio': reporte['hora_inicio'],
+              'hora_fin': reporte['hora_fin'],
+              'esta_vacio': reporte['esta_vacio'],
+              'total_alumnos': reporte['total_alumnos'],
+              'salon_nombre': salonMap?['nombre'] ?? 'S/N',
+              'edificio_nombre': edificioMap?['nombre'] ?? 'S/E',
+              
+              // INYECCIÓN DEL BOOLEANO
+              'es_favorito': esFavorito, 
+            };
+          }
+        }
+        return reportesPorSalon.values.toList();
+      });
+}
 
   // MARCAR SALÓN COMO OCUPADO (esta_vacio = false)
   Future<void> marcarSalonOcupado(int reporteId) async {
@@ -108,7 +158,23 @@ class ReporteService {
         .from('comentario')
         .stream(primaryKey: ['id'])
         .eq('id_reporte', reporteId)
-        .order('fecha_hora', ascending: true);
+        .order('fecha_hora', ascending: true)
+        .map((listaComentarios) {
+        // Mapeamos la lista para asegurarnos de que la estructura sea idéntica
+        return listaComentarios.map((comentario) {
+          // Supabase por defecto anida las tablas relacionadas en un Map interno.
+          final datosEstudiante = comentario['estudiante'] as Map<String, dynamic>?;
+          
+          return {
+            'id': comentario['id'],
+            'id_reporte': comentario['id_reporte'],
+            'id_estudiante': comentario['id_estudiante'],
+            'comentario': comentario['comentario'],
+            'fecha_hora': comentario['fecha_hora'],
+            'nombre_usuario': datosEstudiante?['nombre'] ?? 'Usuario Desconocido',
+          };
+        }).toList();
+      });
   }
 
    // ESCUCHAR CONTEO DE ALUMNOS EN TIEMPO REAL

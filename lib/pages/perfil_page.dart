@@ -1,5 +1,11 @@
+//import 'dart:math';
+
+//import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:prueba1/logica/estudiante_service.dart';
 import 'package:prueba1/main.dart';
+import 'package:prueba1/logica/auth_service.dart';
+import 'package:prueba1/logica/salon_service.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -11,17 +17,68 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-  String nombreUsuario = 'Usuario';
-  List<String> edificiosSeleccionados = ['Edificio A', 'Edificio E'];
-  List<String> favoritos = ['E-105', 'A-201'];
+  final AuthService auth = AuthService();
+  final EstudianteService estudiante = EstudianteService();
+  final SalonService salon = SalonService();
 
-  Widget _botonEdificioNotificacion(String edificio) {
-    bool seleccionado = edificiosSeleccionados.contains(edificio);
+  String nombreUsuario = '';
+  String correoUsuario = '';
+  List<Map<String, dynamic>> edificiosSeleccionados = [];
+  List<Map<String, dynamic>> todosLosEdificios = [];
+  List<Map<String, dynamic>> salonesFavoritos = [];
+  List<Map<String, dynamic>> todosLosSalones = [];
+
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+  
+  // Cargar los datos del usuario desde la sesión activa
+  Future<void> _cargarDatos() async {
+    final nombre = await estudiante.obtenerUsername();
+    final edificiosFavoritos = await estudiante.obtenerEdificiosFavoritos();
+    final edificios = await salon.obtenerEdificios();
+    final salones = await salon.obtenerSalones();
+    final salonesFav = await estudiante.obtenerSalonesFavoritos();
+    setState(() {
+      nombreUsuario = nombre ?? 'Usuario';
+      correoUsuario = auth.emailUsuario!;
+      edificiosSeleccionados = edificiosFavoritos;
+      salonesFavoritos = salonesFav;
+      todosLosSalones = salones;
+      todosLosEdificios = edificios;
+    });
+  }
+
+  // OBTENER FECHA DE REGISTRO DEL USUARIO
+  String? get fechaRegistro {
+    final fecha = auth.usuarioActual?.createdAt;
+    if (fecha == null) return null;
+    
+    final parsedDate = DateTime.parse(fecha);
+    final meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    
+    return '${parsedDate.day} de ${meses[parsedDate.month - 1]} de ${parsedDate.year}';
+  } 
+
+  // Obtener la primera letra del nombre para el icono del perfil
+  String obtenerPrimeraLetra(String nombre) {
+    return nombre.isNotEmpty ? nombre[0].toUpperCase() : 'L';
+  }
+
+  Widget _botonEdificioNotificacion(Map<String, dynamic> edificio) {
+    final nombre = 'Edificio ${edificio['nombre'] as String}';
+    final id = edificio['id'] as int;
+    bool seleccionado = edificiosSeleccionados.any((e) => e['id'] == id);
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        await estudiante.toggleEdificioFavorito(id, !seleccionado);
         setState(() {
           if (seleccionado) {
-            edificiosSeleccionados.remove(edificio);
+            edificiosSeleccionados.removeWhere((e) => e['id'] == id);
           } else {
             edificiosSeleccionados.add(edificio);
           }
@@ -34,7 +91,7 @@ class _PerfilPageState extends State<PerfilPage> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
-          edificio,
+          nombre,
           style: TextStyle(
             color: seleccionado ? Colors.white : Colors.black,
             fontWeight: FontWeight.w500,
@@ -44,7 +101,10 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
-  Widget _itemFavorito(String salon) {
+  Widget _itemFavorito(Map<String, dynamic> salon) {
+    final String nombre = "${salon['edificio_nombre']}-${salon['nombre']}";
+    final int idSalon = salon['id'] as int;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -55,11 +115,12 @@ class _PerfilPageState extends State<PerfilPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(salon, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(nombre, style: const TextStyle(fontWeight: FontWeight.w500)),
           GestureDetector(
-            onTap: () {
+            onTap: () async {
+              await estudiante.toggleSalonFavorito(idSalon, false);
               setState(() {
-                favoritos.remove(salon);
+                salonesFavoritos.removeWhere((e) => e['id'] == idSalon);
               });
             },
             child: const Text(
@@ -74,6 +135,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
   @override
   Widget build(BuildContext context) {
+    final fecha=fechaRegistro ?? 'Desconocida';
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
@@ -109,7 +171,7 @@ class _PerfilPageState extends State<PerfilPage> {
                           ),
                           child: Text(
                             //como no tenemos foto todavía, mostramos la primera letra del nombre del usuario
-                            nombreUsuario[0].toUpperCase(),
+                            obtenerPrimeraLetra(nombreUsuario),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 24,
@@ -166,6 +228,8 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                                                     nombreUsuario =
                                                         controller.text;
                                                   });
+                                                  auth.actualizarUsername(controller.text);
+                                                  estudiante.actualizarUsername(controller.text);
                                                   Navigator.pop(context);
                                                 },
                                                 child: const Text('Guardar'),
@@ -183,9 +247,9 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                                   ),
                                 ],
                               ),
-                              const Text(
-                                'L24020369@veracruz.tecnm.mx',
-                                style: TextStyle(
+                              Text(
+                                correoUsuario,
+                                style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
                                 ),
@@ -200,9 +264,9 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                       'Miembro desde',
                       style: TextStyle(color: Colors.grey),
                     ),
-                    const Text(
-                      'Enero 2026',
-                      style: TextStyle(
+                    Text(
+                      fecha,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 16,
                       ),
@@ -244,26 +308,13 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                       //Cuando los elementos no caben en una línea, automáticamente los mueve a la siguiente
                       spacing: 8, //espacio horizontal entre botones
                       runSpacing: 8, // espacio vertical entre filas
-                      children:
-                          [
-                                'Edificio A',
-                                'Edificio E',
-                                'Edificio B',
-                                'Edificio J',
-                                'Edificio K',
-                                'Edificio F',
-                                'Edificio T',
-                                'Edificio W',
-                                'Edificio X',
-                              ]
-                              .map(
-                                (edificio) =>
-                                    _botonEdificioNotificacion(edificio),
-                              )
-                              .toList(),
-                      //map es un método de las listas que transforma cada elemento en otra cosa.
-                      //Aquí toma cada nombre de edificio y lo convierte en un botón
-                      //.toList() — al final convierte el resultado de .map() de nuevo en una lista porque Wrap necesita una lista de widgets.
+                      children: todosLosEdificios
+                          .map(
+                            (edificio) =>
+                                _botonEdificioNotificacion(edificio),
+                          )
+                          .toList(),
+                      //Itera sobre los edificios favoritos de la BD
                     ),
                   ],
                 ),
@@ -301,21 +352,16 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                               context: context,
                               builder: (context) {
                                 String busqueda = '';
-                                List<String> salonesDisponibles = [
-                                  'E-105',
-                                  'A-201',
-                                  'B-304',
-                                  'J-205',
-                                  'K-101',
-                                ];
+                                todosLosSalones;
                                 return StatefulBuilder(
                                   builder: (context, setStateDialog) {
-                                    List<String> salonesFiltrados =
-                                        salonesDisponibles
+                                    List<Map<String, dynamic>> salonesFiltrados =
+                                        todosLosSalones
                                             .where(
-                                              (s) => s.toLowerCase().contains(
-                                                busqueda.toLowerCase(),
-                                              ),
+                                              (s) {
+                                                final nombre = "${s['edificio_nombre']}-${s['nombre']}";
+                                                return nombre.toLowerCase().contains(busqueda.toLowerCase());
+                                              },
                                             )
                                             .toList();
                                     return AlertDialog(
@@ -340,26 +386,25 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                                             Expanded(
                                               child: ListView.builder(
                                                 shrinkWrap: true,
-                                                itemCount:
-                                                    salonesFiltrados.length,
+                                                itemCount: salonesFiltrados.length,
                                                 itemBuilder: (context, index) {
+                                                  final salon = salonesFiltrados[index];
+                                                  final nombreSalon = "${salon['edificio_nombre']}-${salon['nombre']}";
+                                                  final idSalon = salon['id'] as int;
+                                                  
+                                                  final yaEsFavorito = salonesFavoritos.any((s) => s['id'] == idSalon);
+                                                  
                                                   return ListTile(
-                                                    title: Text(
-                                                      salonesFiltrados[index],
+                                                    title: Text(nombreSalon),
+                                                    trailing: Icon(
+                                                      yaEsFavorito ? Icons.check : Icons.add,
+                                                      color: yaEsFavorito ? Colors.green : Colors.blue,
                                                     ),
-                                                    trailing: const Icon(
-                                                      Icons.add,
-                                                      color: Colors.blue,
-                                                    ),
-                                                    onTap: () {
+                                                    enabled: !yaEsFavorito,
+                                                    onTap: yaEsFavorito ? null : () async {
+                                                      await estudiante.toggleSalonFavorito(idSalon, true);
                                                       setState(() {
-                                                        if (!favoritos.contains(
-                                                          salonesFiltrados[index],
-                                                        )) {
-                                                          favoritos.add(
-                                                            salonesFiltrados[index],
-                                                          );
-                                                        }
+                                                        salonesFavoritos.add(salon);
                                                       });
                                                       Navigator.pop(context);
                                                     },
@@ -388,7 +433,7 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...favoritos.map((salon) => _itemFavorito(salon)).toList(),
+                    ...salonesFavoritos.map((salon) => _itemFavorito(salon)).toList(),
 
                     //los ... Toma una lista anidada y la aplana para que todo quede en un solo nivel.
                     //ya que se espera una sola lista de widgets, pero favoritos.map() devuelve una lista de listas de widgets, entonces los ... se encargan de aplanar esa estructura.
@@ -485,6 +530,7 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                           ),
                           TextButton(
                             onPressed: () {
+                              auth.cerrarSesion();
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
