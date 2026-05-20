@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../logica/reporte_service.dart';
+import '../logica/salon_service.dart';
 
 class ReportarSalonSheet extends StatefulWidget {
   const ReportarSalonSheet({super.key});
@@ -10,26 +12,52 @@ class ReportarSalonSheet extends StatefulWidget {
 }
 
 class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
-  String? edificioSeleccionado;
-  String? salonSeleccionado;
+  int? edificioSeleccionadoId;
+  int? salonSeleccionadoId;
   bool? climaFunciona;
-  String horarioSeleccionado = '20:00-21:00';
+  String horarioSeleccionado = '19:00-20:00';
   final TextEditingController comentarioController = TextEditingController();
+  final SalonService salonService = SalonService();
+  List<Map<String, dynamic>> edificios = [];
+  List<Map<String, dynamic>> salones = [];
+  bool cargandoDatos = true;
+  String? errorCarga;
 
-  final List<String> edificios = [
-    'Edificio A',
-    'Edificio E',
-    'Edificio B',
-    'Edificio J',
-    'Edificio K',
-  ];
-  final Map<String, List<String>> salonesPorEdificio = {
-    'Edificio A': ['A-101', 'A-201', 'A-301'],
-    'Edificio E': ['E-105', 'E-108', 'E-205'],
-    'Edificio B': ['B-101', 'B-304'],
-    'Edificio J': ['J-205', 'J-301'],
-    'Edificio K': ['K-101', 'K-202'],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    try {
+      final resultados = await Future.wait([
+        salonService.obtenerEdificios(),
+        salonService.obtenerSalones(),
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        edificios = resultados[0];
+        salones = resultados[1];
+        cargandoDatos = false;
+        errorCarga = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        cargandoDatos = false;
+        errorCarga = 'No se pudieron cargar los datos desde la base de datos';
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> get salonesFiltrados {
+    if (edificioSeleccionadoId == null) return [];
+    return salones
+        .where((salon) => salon['id_edificio'] == edificioSeleccionadoId)
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,13 +87,26 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
               ],
             ),
             const Divider(height: 24),
+            if (cargandoDatos)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (errorCarga != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  errorCarga!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
             const Text(
               'Edificio',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: edificioSeleccionado,
+            DropdownButtonFormField<int>(
+              initialValue: edificioSeleccionadoId,
               hint: const Text('Seleccionar edificio'),
               decoration: InputDecoration(
                 filled: true,
@@ -76,20 +117,27 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                 ),
               ),
               items: edificios
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .map(
+                    (edificio) => DropdownMenuItem<int>(
+                      value: edificio['id'] as int,
+                      child: Text(
+                        edificio['nombre']?.toString() ?? 'Sin nombre',
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (valor) {
                 setState(() {
-                  edificioSeleccionado = valor;
-                  salonSeleccionado = null;
+                  edificioSeleccionadoId = valor;
+                  salonSeleccionadoId = null;
                 });
               },
             ),
             const SizedBox(height: 16),
             const Text('Salón', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: salonSeleccionado,
+            DropdownButtonFormField<int>(
+              initialValue: salonSeleccionadoId,
               hint: const Text('Seleccionar salón'),
               decoration: InputDecoration(
                 filled: true,
@@ -99,14 +147,21 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                   borderSide: BorderSide.none,
                 ),
               ),
-              items: edificioSeleccionado == null
+              items: edificioSeleccionadoId == null
                   ? []
-                  : salonesPorEdificio[edificioSeleccionado]!
-                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  : salonesFiltrados
+                        .map(
+                          (salon) => DropdownMenuItem<int>(
+                            value: salon['id'] as int,
+                            child: Text(
+                              salon['nombre']?.toString() ?? 'Sin nombre',
+                            ),
+                          ),
+                        )
                         .toList(),
               onChanged: (valor) {
                 setState(() {
-                  salonSeleccionado = valor;
+                  salonSeleccionadoId = valor;
                 });
               },
             ),
@@ -137,7 +192,11 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.check_circle_outline, size: 18, color: Colors.green),
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                            color: Colors.green,
+                          ),
                           SizedBox(width: 6),
                           Text('Funciona'),
                         ],
@@ -168,7 +227,11 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.cancel_outlined, size: 18, color: Colors.red),
+                          Icon(
+                            Icons.cancel_outlined,
+                            size: 18,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 6),
                           Text('No funciona'),
                         ],
@@ -217,7 +280,6 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                               '17:00-18:00',
                               '18:00-19:00',
                               '19:00-20:00',
-                              '20:00-21:00',
                             ]
                             .map(
                               (h) => DropdownMenuItem(value: h, child: Text(h)),
@@ -259,7 +321,87 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () async {
+                if (edificioSeleccionadoId == null ||
+                    salonSeleccionadoId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Selecciona edificio y salón'),
+                    ),
+                  );
+                  return;
+                }
+
+                try {
+                  final reporteService = ReporteService();
+                  final parts = horarioSeleccionado.split('-');
+                  final horaInicio = parts.isNotEmpty
+                      ? parts[0].trim()
+                      : horarioSeleccionado;
+                  final horaFin = parts.length > 1
+                      ? parts[1].trim()
+                      : horarioSeleccionado;
+
+                  // Validación: no permitir reportar horarios pasados o iguales a la hora actual
+                  try {
+                    final ahora = DateTime.now();
+                    final sp = horaInicio.split(':');
+                    final int h = sp.isNotEmpty ? int.parse(sp[0]) : ahora.hour;
+                    final int m = sp.length > 1 ? int.parse(sp[1]) : 0;
+                    final inicio = DateTime(
+                      ahora.year,
+                      ahora.month,
+                      ahora.day,
+                      h,
+                      m,
+                    );
+                    if (!inicio.isAfter(ahora)) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No puedes reportar un horario pasado o igual a la hora actual',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Horario inválido')),
+                    );
+                    return;
+                  }
+
+                  await reporteService.crearReporte(
+                    idSalon: salonSeleccionadoId!,
+                    climaFunciona: climaFunciona ?? true,
+                    horaInicio: horaInicio,
+                    horaFin: horaFin,
+                    comentario: comentarioController.text,
+                  );
+
+                  if (!mounted) return;
+                  // ignore: use_build_context_synchronously
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Reporte publicado'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  // ignore: use_build_context_synchronously
+                  Navigator.pop(context);
+                } catch (e) {
+                  if (!mounted) return;
+                  // ignore: use_build_context_synchronously
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al publicar: ${e.toString()}'),
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 minimumSize: const Size(double.infinity, 50),

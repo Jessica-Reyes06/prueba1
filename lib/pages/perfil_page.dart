@@ -1,11 +1,9 @@
-//import 'dart:math';
-
-//import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:prueba1/logica/estudiante_service.dart';
-import 'package:prueba1/main.dart';
 import 'package:prueba1/logica/auth_service.dart';
 import 'package:prueba1/logica/salon_service.dart';
+import 'package:prueba1/pages/login_page.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -20,6 +18,7 @@ class _PerfilPageState extends State<PerfilPage> {
   final AuthService auth = AuthService();
   final EstudianteService estudiante = EstudianteService();
   final SalonService salon = SalonService();
+  final supabase = Supabase.instance.client;
 
   String nombreUsuario = '';
   String correoUsuario = '';
@@ -28,13 +27,12 @@ class _PerfilPageState extends State<PerfilPage> {
   List<Map<String, dynamic>> salonesFavoritos = [];
   List<Map<String, dynamic>> todosLosSalones = [];
 
-
   @override
   void initState() {
     super.initState();
     _cargarDatos();
   }
-  
+
   // Cargar los datos del usuario desde la sesión activa
   Future<void> _cargarDatos() async {
     final nombre = await estudiante.obtenerUsername();
@@ -56,13 +54,25 @@ class _PerfilPageState extends State<PerfilPage> {
   String? get fechaRegistro {
     final fecha = auth.usuarioActual?.createdAt;
     if (fecha == null) return null;
-    
+
     final parsedDate = DateTime.parse(fecha);
-    final meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    
+    final meses = [
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre',
+    ];
+
     return '${parsedDate.day} de ${meses[parsedDate.month - 1]} de ${parsedDate.year}';
-  } 
+  }
 
   // Obtener la primera letra del nombre para el icono del perfil
   String obtenerPrimeraLetra(String nombre) {
@@ -104,7 +114,7 @@ class _PerfilPageState extends State<PerfilPage> {
   Widget _itemFavorito(Map<String, dynamic> salon) {
     final String nombre = "${salon['edificio_nombre']}-${salon['nombre']}";
     final int idSalon = salon['id'] as int;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -135,7 +145,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
   @override
   Widget build(BuildContext context) {
-    final fecha=fechaRegistro ?? 'Desconocida';
+    final fecha = fechaRegistro ?? 'Desconocida';
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
@@ -228,8 +238,12 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                                                     nombreUsuario =
                                                         controller.text;
                                                   });
-                                                  auth.actualizarUsername(controller.text);
-                                                  estudiante.actualizarUsername(controller.text);
+                                                  auth.actualizarUsername(
+                                                    controller.text,
+                                                  );
+                                                  estudiante.actualizarUsername(
+                                                    controller.text,
+                                                  );
                                                   Navigator.pop(context);
                                                 },
                                                 child: const Text('Guardar'),
@@ -310,8 +324,7 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                       runSpacing: 8, // espacio vertical entre filas
                       children: todosLosEdificios
                           .map(
-                            (edificio) =>
-                                _botonEdificioNotificacion(edificio),
+                            (edificio) => _botonEdificioNotificacion(edificio),
                           )
                           .toList(),
                       //Itera sobre los edificios favoritos de la BD
@@ -355,15 +368,16 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                                 todosLosSalones;
                                 return StatefulBuilder(
                                   builder: (context, setStateDialog) {
-                                    List<Map<String, dynamic>> salonesFiltrados =
-                                        todosLosSalones
-                                            .where(
-                                              (s) {
-                                                final nombre = "${s['edificio_nombre']}-${s['nombre']}";
-                                                return nombre.toLowerCase().contains(busqueda.toLowerCase());
-                                              },
-                                            )
-                                            .toList();
+                                    List<Map<String, dynamic>>
+                                    salonesFiltrados = todosLosSalones.where((
+                                      s,
+                                    ) {
+                                      final nombre =
+                                          "${s['edificio_nombre']}-${s['nombre']}";
+                                      return nombre.toLowerCase().contains(
+                                        busqueda.toLowerCase(),
+                                      );
+                                    }).toList();
                                     return AlertDialog(
                                       title: const Text('Agregar favorito'),
                                       content: SizedBox(
@@ -386,28 +400,50 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                                             Expanded(
                                               child: ListView.builder(
                                                 shrinkWrap: true,
-                                                itemCount: salonesFiltrados.length,
+                                                itemCount:
+                                                    salonesFiltrados.length,
                                                 itemBuilder: (context, index) {
-                                                  final salon = salonesFiltrados[index];
-                                                  final nombreSalon = "${salon['edificio_nombre']}-${salon['nombre']}";
-                                                  final idSalon = salon['id'] as int;
-                                                  
-                                                  final yaEsFavorito = salonesFavoritos.any((s) => s['id'] == idSalon);
-                                                  
+                                                  final salon =
+                                                      salonesFiltrados[index];
+                                                  final nombreSalon =
+                                                      "${salon['edificio_nombre']}-${salon['nombre']}";
+                                                  final idSalon =
+                                                      salon['id'] as int;
+
+                                                  final yaEsFavorito =
+                                                      salonesFavoritos.any(
+                                                        (s) =>
+                                                            s['id'] == idSalon,
+                                                      );
+
                                                   return ListTile(
                                                     title: Text(nombreSalon),
                                                     trailing: Icon(
-                                                      yaEsFavorito ? Icons.check : Icons.add,
-                                                      color: yaEsFavorito ? Colors.green : Colors.blue,
+                                                      yaEsFavorito
+                                                          ? Icons.check
+                                                          : Icons.add,
+                                                      color: yaEsFavorito
+                                                          ? Colors.green
+                                                          : Colors.blue,
                                                     ),
                                                     enabled: !yaEsFavorito,
-                                                    onTap: yaEsFavorito ? null : () async {
-                                                      await estudiante.toggleSalonFavorito(idSalon, true);
-                                                      setState(() {
-                                                        salonesFavoritos.add(salon);
-                                                      });
-                                                      Navigator.pop(context);
-                                                    },
+                                                    onTap: yaEsFavorito
+                                                        ? null
+                                                        : () async {
+                                                            await estudiante
+                                                                .toggleSalonFavorito(
+                                                                  idSalon,
+                                                                  true,
+                                                                );
+                                                            setState(() {
+                                                              salonesFavoritos
+                                                                  .add(salon);
+                                                            });
+                                                            Navigator.pop(
+                                                              // ignore: use_build_context_synchronously
+                                                              context,
+                                                            );
+                                                          },
                                                   );
                                                 },
                                               ),
@@ -433,7 +469,7 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...salonesFavoritos.map((salon) => _itemFavorito(salon)).toList(),
+                    ...salonesFavoritos.map((salon) => _itemFavorito(salon)),
 
                     //los ... Toma una lista anidada y la aplana para que todo quede en un solo nivel.
                     //ya que se espera una sola lista de widgets, pero favoritos.map() devuelve una lista de listas de widgets, entonces los ... se encargan de aplanar esa estructura.
@@ -464,16 +500,36 @@ Aquí lo inicializamos con text: nombreUsuario para que el campo ya tenga el nom
                             child: const Text('Cancelar'),
                           ),
                           TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Mensaje enviado al administrador',
+                            onPressed: () async {
+                              final texto = mensajeController.text.trim();
+                              if (texto.isEmpty) return;
+
+                              try {
+                                await supabase.functions.invoke(
+                                  'enviar-correo',
+                                  body: {'mensaje': texto},
+                                );
+                                // ignore: use_build_context_synchronously
+                                Navigator.pop(context);
+                                if (!mounted) return;
+                                // ignore: use_build_context_synchronously
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Mensaje enviado correctamente',
+                                    ),
+                                    backgroundColor: Colors.green,
                                   ),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+                                // ignore: use_build_context_synchronously
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al enviar: $e'),
+                                  ),
+                                );
+                              }
                             },
                             child: const Text('Enviar'),
                           ),
