@@ -5,6 +5,24 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ReporteService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  String _formatearHoraComoTimestamp(String hora) {
+    final partes = hora.trim().split(':');
+    final ahora = DateTime.now();
+
+    final int horas = partes.isNotEmpty ? int.parse(partes[0]) : ahora.hour;
+    final int minutos = partes.length > 1 ? int.parse(partes[1]) : ahora.minute;
+
+    final fechaHora = DateTime(
+      ahora.year,
+      ahora.month,
+      ahora.day,
+      horas,
+      minutos,
+    );
+
+    return fechaHora.toIso8601String();
+  }
+
   // CREAR UN REPORTE NUEVO
   Future<void> crearReporte({
     required int idSalon,
@@ -15,7 +33,13 @@ class ReporteService {
     String? comentario,
   }) async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      throw StateError('Debes iniciar sesión para publicar un reporte');
+    }
+
+    final fechaHoy = DateTime.now().toIso8601String().split('T')[0];
+    final horaInicioTimestamp = _formatearHoraComoTimestamp(horaInicio);
+    final horaFinTimestamp = _formatearHoraComoTimestamp(horaFin);
 
     try {
       final responseReporte = await _supabase.from('reporte').insert({
@@ -29,7 +53,7 @@ class ReporteService {
         'total_alumnos': 0, // El trigger lo actualizará
       }).select();
 
-      final reporteId =responseReporte[0]['id'] as int;
+      final reporteId = responseReporte[0]['id'] as int;
       if (comentario != null && comentario.trim().isNotEmpty) {
         await _supabase.from('comentario').insert({
           'id_reporte': reporteId,
@@ -68,8 +92,8 @@ class ReporteService {
               .eq('id_estudiante', userId);
           
             salonesFavoritosIds = favoritosData
-              .map((f) => f['id_salon'] as int)
-              .toList();
+                .map((f) => f['id_salon'] as int)
+                .toList();
           }
 
           // Filtrar por fecha de hoy
@@ -132,28 +156,28 @@ class ReporteService {
               if (idEdificio != null && idEdificioReporte != idEdificio) {
                 continue; // Se salta este reporte y va al siguiente
               }
-              
+
               //Vista salon
               reportesPorSalon[idSalon] = {
-              'id': reporte['id'],
-              'id_salon': idSalon,
-              'clima_funciona': reporte['clima_funciona'],
-              //'fecha': reporte['fecha'],
-              'hora_inicio': reporte['hora_inicio'],
-              'hora_fin': reporte['hora_fin'],
-              'esta_vacio': reporte['esta_vacio'],
-              'total_alumnos': reporte['total_alumnos'],
-              'salon_nombre': salonMap?['nombre'] ?? 'S/N',
-              'edificio_nombre': edificioMap?['nombre'] ?? 'S/E',
-              
-              // INYECCIÓN DEL BOOLEANO
-              'es_favorito': esFavorito, 
-            };
+                'id': reporte['id'],
+                'id_salon': idSalon,
+                'clima_funciona': reporte['clima_funciona'],
+                //'fecha': reporte['fecha'],
+                'hora_inicio': reporte['hora_inicio'],
+                'hora_fin': reporte['hora_fin'],
+                'esta_vacio': reporte['esta_vacio'],
+                'total_alumnos': reporte['total_alumnos'],
+                'salon_nombre': salonMap?['nombre'] ?? 'S/N',
+                'edificio_nombre': edificioMap?['nombre'] ?? 'S/E',
+
+                // INYECCIÓN DEL BOOLEANO
+                'es_favorito': esFavorito,
+              };
+            }
           }
-        }
-        return reportesPorSalon.values.toList();
-      });
-}
+          return reportesPorSalon.values.toList();
+        });
+  }
 
   // MARCAR SALÓN COMO OCUPADO (esta_vacio = false)
   Future<void> marcarSalonOcupado(int reporteId) async {
@@ -172,7 +196,7 @@ class ReporteService {
   Future<void> agregarComentario(int reporteId, String textoComentario) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;
-    
+
     try {
       await _supabase.from('comentario').insert({
         'id_reporte': reporteId,
@@ -193,24 +217,26 @@ class ReporteService {
         .eq('id_reporte', reporteId)
         .order('fecha_hora', ascending: true)
         .map((listaComentarios) {
-        // Mapeamos la lista para asegurarnos de que la estructura sea idéntica
-        return listaComentarios.map((comentario) {
-          // Supabase por defecto anida las tablas relacionadas en un Map interno.
-          final datosEstudiante = comentario['estudiante'] as Map<String, dynamic>?;
-          
-          return {
-            'id': comentario['id'],
-            'id_reporte': comentario['id_reporte'],
-            'id_estudiante': comentario['id_estudiante'],
-            'comentario': comentario['comentario'],
-            'fecha_hora': comentario['fecha_hora'],
-            'nombre_usuario': datosEstudiante?['nombre'] ?? 'Usuario Desconocido',
-          };
-        }).toList();
-      });
+          // Mapeamos la lista para asegurarnos de que la estructura sea idéntica
+          return listaComentarios.map((comentario) {
+            // Supabase por defecto anida las tablas relacionadas en un Map interno.
+            final datosEstudiante =
+                comentario['estudiante'] as Map<String, dynamic>?;
+
+            return {
+              'id': comentario['id'],
+              'id_reporte': comentario['id_reporte'],
+              'id_estudiante': comentario['id_estudiante'],
+              'comentario': comentario['comentario'],
+              'fecha_hora': comentario['fecha_hora'],
+              'nombre_usuario':
+                  datosEstudiante?['nombre'] ?? 'Usuario Desconocido',
+            };
+          }).toList();
+        });
   }
 
-   // ESCUCHAR CONTEO DE ALUMNOS EN TIEMPO REAL
+  // ESCUCHAR CONTEO DE ALUMNOS EN TIEMPO REAL
   // Lee el conteo que el trigger conteo_actividad mantiene actualizado en la tabla reporte
   Stream<int> actualizarConteoActividad(int reporteId) {
     return _supabase
