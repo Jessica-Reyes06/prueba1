@@ -12,7 +12,7 @@ class DetalleSalonPage extends StatefulWidget {
 }
 
 class _DetalleSalonPageState extends State<DetalleSalonPage> {
-  bool estoyAqui=false;
+  bool estoyAqui = false;
   final TextEditingController comentarioController = TextEditingController();
   List<Map<String, String>> comentarios = [
     {'texto': 'Estamos estudiando', 'tiempo': 'Hace 5 min'},
@@ -104,7 +104,10 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text('Personas', style: TextStyle(color: Colors.black54)),
+                                  const Text(
+                                    'Personas',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
                                   Text(
                                     '${widget.salon.personas}',
                                     style: const TextStyle(
@@ -130,7 +133,10 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text('Clima', style: TextStyle(color: Colors.black54)),
+                                  const Text(
+                                    'Clima',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
                                   Text(
                                     widget.salon.tieneClima
                                         ? 'Funciona'
@@ -148,11 +154,13 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            onPressed: () async {setState(() => estoyAqui = !estoyAqui);},
+                            onPressed: () async {
+                              setState(() => estoyAqui = !estoyAqui);
+                            },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: estoyAqui 
-                                ? Colors.green.shade600 
-                                : Colors.blue,
+                              backgroundColor: estoyAqui
+                                  ? Colors.green.shade600
+                                  : Colors.blue,
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -160,22 +168,22 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                             ),
                             icon: const Icon(Icons.check, color: Colors.white),
                             label: estoyAqui
-                              ? const Text(
-                                  'Estoy aquí',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                ? const Text(
+                                    'Estoy aquí',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Marcar que estoy aquí',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                )
-                              : const Text(
-                                  'Marcar que estoy aquí',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton.icon(

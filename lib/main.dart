@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-
-import 'package:prueba1/pages/home_page.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
-import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:flutter/material.dart'; //se importa el paquete de material design para usar widgets y temas predefinidos
+import 'package:prueba1/pages/home_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:prueba1/logica/auth_service.dart';
 
@@ -10,10 +9,12 @@ void main() async {
 
   await dotenv.load(fileName: ".env");
 
+  // Verificación rápida: imprimir si las variables están cargadas (no imprimir la clave completa)
+
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  ); // Inicializa la conexión con Supabase 
+  ); // Inicializa la conexión con Supabase
 
   runApp(const MyApp());
 } // La función main es el punto de entrada de la aplicación. Aquí se llama a runApp para iniciar la aplicación y se pasa una instancia de MyApp como argumento.
@@ -66,6 +67,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController controladorConfirmarContrasena =TextEditingController();
 
   @override
+  //sobrecarga vs sobreescritura
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 17, 37, 116),
@@ -234,7 +236,7 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: () {
                                 String correo = controladorCorreo.text;
                                 String contrasena = controladorContrasena.text;
-                                
+
                                 if (correo.isEmpty || contrasena.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
