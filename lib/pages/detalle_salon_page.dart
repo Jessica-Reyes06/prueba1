@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:prueba1/logica/actividad_service.dart';
+import 'package:prueba1/logica/reporte_service.dart';
 import 'salon_model.dart';
+import 'dart:async';
 
 class DetalleSalonPage extends StatefulWidget {
   final Salon salon;
@@ -9,16 +12,71 @@ class DetalleSalonPage extends StatefulWidget {
   State<DetalleSalonPage> createState() {
     return _DetalleSalonPageState();
   }
+
 }
 
 class _DetalleSalonPageState extends State<DetalleSalonPage> {
-  bool estoyAqui = false;
   final TextEditingController comentarioController = TextEditingController();
-  List<Map<String, String>> comentarios = [
-    {'texto': 'Estamos estudiando', 'tiempo': 'Hace 5 min'},
-    {'texto': 'Está silencioso', 'tiempo': 'Hace 15 min'},
-    {'texto': 'Hay ruido', 'tiempo': 'Hace 30 min'},
-  ];
+  final ReporteService reporte = ReporteService();
+  final ActividadService actividad = ActividadService();
+  
+  late int reporteId;
+  late int conteoPersonas;
+  bool estoyAqui = false;
+  List<Map<String, dynamic>> comentarios = [];
+  late StreamSubscription<List<Map<String, dynamic>>> _comentariosSubscription;
+  late StreamSubscription<int> _conteoSubscription; // Nuevo atributo para el conteo de personas
+
+  @override
+    void initState() {
+      super.initState();
+      reporteId = widget.salon.reporteId;
+      conteoPersonas = widget.salon.personas;
+      cargarDatos(); // Carga los datos cuando se abre la pantalla
+  }
+
+  @override
+  void dispose() {
+    _comentariosSubscription.cancel(); // Cancelar suscripción al salir
+    _conteoSubscription.cancel(); // Cancelar suscripción al salir
+    super.dispose();
+  }
+
+  Future<void> cargarDatos() async {
+
+    try {
+      final yaPresente = await actividad.mostrarActividad(reporteId);
+      setState(() {
+        estoyAqui = yaPresente;
+      });
+      // Escuchar comentarios en tiempo real del reporte específico
+      _comentariosSubscription = reporte.escucharComentarios(reporteId).listen((listaComentarios) {
+      print('🔍 Comentarios del reporte $reporteId: $listaComentarios');
+      print('📊 Cantidad de comentarios: ${listaComentarios.length}');
+      if (mounted) {
+        setState(() {
+          comentarios = listaComentarios;
+        });
+      }
+      }, onError: (error) {
+        print('Error escuchando comentarios: $error');
+      });
+    } catch (e) {
+      print('Error cargando datos: $e');
+    }
+    // Escuchar conteo de personas en tiempo real 
+    _conteoSubscription = reporte.actualizarConteoActividad(reporteId).listen((conteo) {
+    print('👥 Conteo de personas en el reporte $reporteId: $conteo');
+    if (mounted) {
+        setState(() {
+          conteoPersonas = conteo;
+        });
+      }
+    }, onError: (error) {
+      print('Error escuchando conteo de personas: $error');
+    });
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +92,11 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () {
+                        // Devolver el salon actualizado con el conteo actual
+                        final salonActualizado = widget.salon.copyWith(personas: conteoPersonas);
+                        Navigator.pop(context, salonActualizado);
+                      },
                       child: const Icon(Icons.arrow_back, size: 28),
                     ),
                     const SizedBox(height: 16),
@@ -109,7 +171,7 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     style: TextStyle(color: Colors.black54),
                                   ),
                                   Text(
-                                    '${widget.salon.personas}',
+                                    '$conteoPersonas',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -156,6 +218,11 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                           ElevatedButton.icon(
                             onPressed: () async {
                               setState(() => estoyAqui = !estoyAqui);
+                              if (estoyAqui) {
+                                await actividad.unirseAActividad(reporteId);
+                              } else {
+                                await actividad.salirDeActividad(reporteId);
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: estoyAqui
@@ -187,7 +254,11 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: () async {
+                              reporte.marcarSalonOcupado(reporteId);
+                              final salonActualizado = widget.salon.copyWith(disponible: false);
+                              Navigator.pop(context, salonActualizado);
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red.shade600,
                               minimumSize: const Size(double.infinity, 50),
@@ -239,9 +310,10 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(comentario['texto']!),
+
+                                      Text(comentario['comentario']!),
                                       Text(
-                                        comentario['tiempo']!,
+                                        comentario['fecha_hora']!.split('T')[1].substring(0, 5),
                                         style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 12,
@@ -266,15 +338,21 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                               ),
                               const SizedBox(width: 8),
                               FloatingActionButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   if (comentarioController.text.isNotEmpty) {
-                                    setState(() {
-                                      comentarios.insert(0, {
-                                        'texto': comentarioController.text,
-                                        'tiempo': 'Ahora',
-                                      });
+                                    try {
+                                      await reporte.agregarComentario(
+                                        reporteId,
+                                        comentarioController.text,
+                                      );
                                       comentarioController.clear();
-                                    });
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Error al agregar comentario'),
+                                        ),
+                                      );
+                                    }
                                   }
                                 },
                                 backgroundColor: Colors.blue,

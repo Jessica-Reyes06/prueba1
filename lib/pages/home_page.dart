@@ -51,7 +51,6 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> cargarDatos() async {
     try {
-      //final favoritos = await estudiante.obtenerSalonesFavoritos();
       final todosLosEdificios = await salon.obtenerEdificios();
       if (mounted) {
         setState(() {
@@ -148,13 +147,25 @@ class _HomePageState extends State<HomePage> {
 
   Widget _tarjetaSalon(BuildContext context, Salon salon) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final salonActualizado = await Navigator.push<Salon>(
           context,
           MaterialPageRoute(
             builder: (context) => DetalleSalonPage(salon: salon),
           ),
         );
+        
+        // Si el usuario regresó con datos actualizados
+        if (salonActualizado != null) {
+          setState(() {
+            // Buscar el índice del salón actual en la lista
+            final indice = reportes.indexWhere((s) => s.reporteId == salonActualizado.reporteId);
+            if (indice != -1) {
+              // Reemplazar el salón en la lista con la versión actualizada
+              reportes[indice] = salonActualizado;
+            }
+          });
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

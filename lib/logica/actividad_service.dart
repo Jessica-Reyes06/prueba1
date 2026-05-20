@@ -42,4 +42,26 @@ class ActividadService {
       rethrow;
     }
   }
+
+  //MOSTRAR ACTIVIDAD
+  Future<bool> mostrarActividad(int reporteId) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return false;
+
+    try {
+      final response = await _supabase
+          .from('actividad')
+          .select('activo')
+          .eq('id_reporte', reporteId)
+          .eq('id_estudiante', userId)
+          .order('fecha_hora', ascending: false)
+          .limit(1)
+          .single();
+
+      return response['activo'] ?? false;
+    } catch (e) {
+      print('Error obteniendo estado de actividad: $e');
+      return false;
+    }
+  }
 }
