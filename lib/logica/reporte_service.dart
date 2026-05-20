@@ -37,7 +37,6 @@ class ReporteService {
       throw StateError('Debes iniciar sesión para publicar un reporte');
     }
 
-    final fechaHoy = DateTime.now().toIso8601String().split('T')[0];
     final horaInicioTimestamp = _formatearHoraComoTimestamp(horaInicio);
     final horaFinTimestamp = _formatearHoraComoTimestamp(horaFin);
 
@@ -46,9 +45,11 @@ class ReporteService {
         'id_salon': idSalon,
         'id_estudiante': userId,
         'clima_funciona': climaFunciona,
-        'fecha': DateTime.now().toIso8601String().split('T')[0], // Formato: YYYY-MM-DD
-        'hora_inicio': horaInicio,
-        'hora_fin': horaFin,
+        'fecha': DateTime.now().toIso8601String().split(
+          'T',
+        )[0], // Formato: YYYY-MM-DD
+        'hora_inicio': horaInicioTimestamp,
+        'hora_fin': horaFinTimestamp,
         'esta_vacio': true,
         'total_alumnos': 0, // El trigger lo actualizará
       }).select();
@@ -77,20 +78,20 @@ class ReporteService {
         .from('reporte')
         .stream(primaryKey: ['id'])
         .eq('esta_vacio', true)
-        .asyncMap((listaReportes) async{
+        .asyncMap((listaReportes) async {
           print('🔵 Total reportes raw: ${listaReportes.length}');
           if (listaReportes.isNotEmpty) {
             print('   Primer reporte raw: ${listaReportes.first}');
           }
-          
+
           //Obtener salones favoritos del usuario
           List<int> salonesFavoritosIds = [];
           if (userId != null) {
             final favoritosData = await _supabase
-              .from('salon_favorito')
-              .select('id_salon')
-              .eq('id_estudiante', userId);
-          
+                .from('salon_favorito')
+                .select('id_salon')
+                .eq('id_estudiante', userId);
+
             salonesFavoritosIds = favoritosData
                 .map((f) => f['id_salon'] as int)
                 .toList();
@@ -105,15 +106,18 @@ class ReporteService {
           // Filtrar reportes de hoy que estén en el rango de hora
           final reportesHoy = listaReportes.where((r) {
             final fecha = r['fecha'] as String?;
-            print('   Comparando fecha: "$fecha" == "$diaActual"? ${fecha == diaActual}');
+            print(
+              '   Comparando fecha: "$fecha" == "$diaActual"? ${fecha == diaActual}',
+            );
             if (fecha != diaActual) return false;
 
-            final horaActual = '${horaActualUtc.hour.toString().padLeft(2, '0')}:${horaActualUtc.minute.toString().padLeft(2, '0')}';
-            
+            final horaActual =
+                '${horaActualUtc.hour.toString().padLeft(2, '0')}:${horaActualUtc.minute.toString().padLeft(2, '0')}';
+
             // Extraer HH:MM de los timestamps ISO8601
             var horaInicio = r['hora_inicio'] as String?;
             var horaFin = r['hora_fin'] as String?;
-            
+
             // Si viene con timestamp completo, extraer solo HH:MM
             if (horaInicio != null && horaInicio.contains('T')) {
               horaInicio = horaInicio.split('T')[1].substring(0, 5); // "18:00"
@@ -121,13 +125,15 @@ class ReporteService {
             if (horaFin != null && horaFin.contains('T')) {
               horaFin = horaFin.split('T')[1].substring(0, 5); // "19:00"
             }
-            
-            print('   Hora actual UTC: $horaActual, Rango: $horaInicio - $horaFin');
+
+            print(
+              '   Hora actual UTC: $horaActual, Rango: $horaInicio - $horaFin',
+            );
 
             return horaActual.compareTo(horaInicio ?? '') >= 0 &&
                 horaActual.compareTo(horaFin ?? '') <= 0;
           }).toList();
-          
+
           print('🟢 Reportes hoy en rango de hora: ${reportesHoy.length}');
 
           // Agrupar por salón y tomar solo el primero (más antiguo)
@@ -141,14 +147,15 @@ class ReporteService {
                   .select('*, edificio(*)')
                   .eq('id', idSalon)
                   .single();
-              
+
               final salonMap = salonData as Map<String, dynamic>?;
-              final edificioMap = salonMap?['edificio'] as Map<String, dynamic>?;
-              
+              final edificioMap =
+                  salonMap?['edificio'] as Map<String, dynamic>?;
+
               print('🔍 Reporte ID: ${reporte['id']}');
               print('   salonMap: $salonMap');
               print('   edificioMap: $edificioMap');
-              
+
               final idEdificioReporte = salonMap?['id_edificio'] as int?;
 
               final esFavorito = salonesFavoritosIds.contains(idSalon);
