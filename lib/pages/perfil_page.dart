@@ -42,14 +42,16 @@ class _PerfilPageState extends State<PerfilPage> {
     final edificios = await salon.obtenerEdificios();
     final salones = await salon.obtenerSalones();
     final salonesFav = await estudiante.obtenerSalonesFavoritos();
-    setState(() {
-      nombreUsuario = nombre ?? 'Usuario';
-      correoUsuario = auth.emailUsuario!;
-      edificiosSeleccionados = edificiosFavoritos;
-      salonesFavoritos = salonesFav;
-      todosLosSalones = salones;
-      todosLosEdificios = edificios;
-    });
+    if (mounted) {
+      setState(() {
+        nombreUsuario = nombre ?? 'Usuario';
+        correoUsuario = auth.emailUsuario!;
+        edificiosSeleccionados = edificiosFavoritos;
+        salonesFavoritos = salonesFav;
+        todosLosSalones = salones;
+        todosLosEdificios = edificios;
+      });
+    }
   }
 
   // OBTENER FECHA DE REGISTRO DEL USUARIO
@@ -76,13 +78,15 @@ class _PerfilPageState extends State<PerfilPage> {
     return GestureDetector(
       onTap: () async {
         await estudiante.toggleEdificioFavorito(id, !seleccionado);
-        setState(() {
-          if (seleccionado) {
-            edificiosSeleccionados.removeWhere((e) => e['id'] == id);
-          } else {
-            edificiosSeleccionados.add(edificio);
-          }
-        });
+        if (mounted) {
+          setState(() {
+            if (seleccionado) {
+              edificiosSeleccionados.removeWhere((e) => e['id'] == id);
+            } else {
+              edificiosSeleccionados.add(edificio);
+            }
+          });
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -119,9 +123,11 @@ class _PerfilPageState extends State<PerfilPage> {
           GestureDetector(
             onTap: () async {
               await estudiante.toggleSalonFavorito(idSalon, false);
-              setState(() {
-                salonesFavoritos.removeWhere((e) => e['id'] == idSalon);
-              });
+              if (mounted) {
+                setState(() {
+                  salonesFavoritos.removeWhere((e) => e['id'] == idSalon);
+                });
+              }
             },
             child: const Text(
               'Eliminar',

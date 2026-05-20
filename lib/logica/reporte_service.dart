@@ -22,7 +22,7 @@ class ReporteService {
         'id_salon': idSalon,
         'id_estudiante': userId,
         'clima_funciona': climaFunciona,
-        //'fecha': fecha.toIso8601String().split('T')[0], // Formato: YYYY-MM-DD
+        'fecha': DateTime.now().toIso8601String().split('T')[0], // Formato: YYYY-MM-DD
         'hora_inicio': horaInicio,
         'hora_fin': horaFin,
         'esta_vacio': true,
@@ -54,12 +54,16 @@ class ReporteService {
         .stream(primaryKey: ['id'])
         .eq('esta_vacio', true)
         .asyncMap((listaReportes) async{
+          print('🔵 Total reportes raw: ${listaReportes.length}');
+          if (listaReportes.isNotEmpty) {
+            print('   Primer reporte raw: ${listaReportes.first}');
+          }
           
           //Obtener salones favoritos del usuario
           List<int> salonesFavoritosIds = [];
           if (userId != null) {
             final favoritosData = await _supabase
-              .from('salones_favoritos')
+              .from('salon_favorito')
               .select('id_salon')
               .eq('id_estudiante', userId);
           
@@ -70,28 +74,57 @@ class ReporteService {
 
           // Filtrar por fecha de hoy
           final hoy = DateTime.now();
-          final diaActual = hoy.toIso8601String().split('T')[0];
+          final horaActualUtc = hoy.toUtc(); // Convertir a UTC
+          final diaActual = horaActualUtc.toIso8601String().split('T')[0];
+          print('📅 Día actual buscado (UTC): $diaActual');
 
           // Filtrar reportes de hoy que estén en el rango de hora
           final reportesHoy = listaReportes.where((r) {
             final fecha = r['fecha'] as String?;
+            print('   Comparando fecha: "$fecha" == "$diaActual"? ${fecha == diaActual}');
             if (fecha != diaActual) return false;
 
-            final horaActual = '${hoy.hour.toString().padLeft(2, '0')}:${hoy.minute.toString().padLeft(2, '0')}';
-            final horaInicio = r['hora_inicio'] as String?;
-            final horaFin = r['hora_fin'] as String?;
+            final horaActual = '${horaActualUtc.hour.toString().padLeft(2, '0')}:${horaActualUtc.minute.toString().padLeft(2, '0')}';
+            
+            // Extraer HH:MM de los timestamps ISO8601
+            var horaInicio = r['hora_inicio'] as String?;
+            var horaFin = r['hora_fin'] as String?;
+            
+            // Si viene con timestamp completo, extraer solo HH:MM
+            if (horaInicio != null && horaInicio.contains('T')) {
+              horaInicio = horaInicio.split('T')[1].substring(0, 5); // "18:00"
+            }
+            if (horaFin != null && horaFin.contains('T')) {
+              horaFin = horaFin.split('T')[1].substring(0, 5); // "19:00"
+            }
+            
+            print('   Hora actual UTC: $horaActual, Rango: $horaInicio - $horaFin');
 
             return horaActual.compareTo(horaInicio ?? '') >= 0 &&
                 horaActual.compareTo(horaFin ?? '') <= 0;
           }).toList();
+          
+          print('🟢 Reportes hoy en rango de hora: ${reportesHoy.length}');
 
           // Agrupar por salón y tomar solo el primero (más antiguo)
           final Map<int, Map<String, dynamic>> reportesPorSalon = {};
           for (var reporte in reportesHoy) {
             final idSalon = reporte['id_salon'] as int;
             if (!reportesPorSalon.containsKey(idSalon)) {
-              final salonMap = reporte['salon'] as Map<String, dynamic>?;
+              // Obtener datos del salón y edificio
+              final salonData = await _supabase
+                  .from('salon')
+                  .select('*, edificio(*)')
+                  .eq('id', idSalon)
+                  .single();
+              
+              final salonMap = salonData as Map<String, dynamic>?;
               final edificioMap = salonMap?['edificio'] as Map<String, dynamic>?;
+              
+              print('🔍 Reporte ID: ${reporte['id']}');
+              print('   salonMap: $salonMap');
+              print('   edificioMap: $edificioMap');
+              
               final idEdificioReporte = salonMap?['id_edificio'] as int?;
 
               final esFavorito = salonesFavoritosIds.contains(idSalon);

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'mapa_file.dart'; //para ir a la pantalla del mapa
 import 'perfil_page.dart'; //para ir a la pantalla del perfil
 import 'detalle_salon_page.dart'; //para ir a la pantalla del detalle del salón
 import 'salon_model.dart'; //para usar la clase Salon y crear objetos de salón
 import 'reportar_salon.dart';
+//import '../logica/estudiante_service.dart';
+import '../logica/reporte_service.dart';
+import '../logica/salon_service.dart';
 
 class HomePage extends StatefulWidget {
   // apariencia fija
@@ -17,38 +21,94 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  //final EstudianteService estudiante = EstudianteService();
+  final ReporteService reporte = ReporteService();
+  final SalonService salon = SalonService();
+  
   // el estado que cambia y los atributos que cambian
   String edificioSeleccionado = 'Todos';
   int paginaActual = 0;
+  String textoBusqueda = '';
+  //List<Map<String, dynamic>> salonesFavoritos = [];
+  List<Map<String, dynamic>> edificios = [];
+  List<Salon> reportes = [];
+  late StreamSubscription<List<Map<String, dynamic>>> _reportesSubscription;
+  late TextEditingController _buscadorController;
 
-  //SALONES ESTÁTICOS PARA VISUALIZAR DISEÑO
-  final List<Salon> salones = [
-    const Salon(
-      nombre: 'E-105',
-      edificio: 'Edificio E',
-      tieneClima: true,
-      personas: 0,
-      disponible: true,
-      favorito: true,
-    ),
-    const Salon(
-      nombre: 'A-201',
-      edificio: 'Edificio A',
-      tieneClima: false,
-      personas: 2,
-      disponible: true,
-      favorito: false,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _buscadorController = TextEditingController();
+    cargarDatos(); // Carga los datos cuando se abre la pantalla
+  }
 
-  List<Salon> get salonesFiltrados {
-    if (edificioSeleccionado == 'Todos') {
-      return salones;
+  @override
+  void dispose() {
+    _reportesSubscription.cancel(); // Cancelar suscripción al salir
+    _buscadorController.dispose(); // Liberar el controller
+    super.dispose();
+  }
+
+  Future<void> cargarDatos() async {
+    try {
+      //final favoritos = await estudiante.obtenerSalonesFavoritos();
+      final todosLosEdificios = await salon.obtenerEdificios();
+      if (mounted) {
+        setState(() {
+          edificios = todosLosEdificios;
+        });
+      }
+      
+      // Escuchar reportes en tiempo real
+      _reportesSubscription = reporte.escucharReportesActivos(null).listen((listaReportes) {
+        print('🔍 Datos recibidos del Stream: $listaReportes');
+        print('📊 Cantidad de reportes: ${listaReportes.length}');
+        if (listaReportes.isNotEmpty) {
+          print('📋 Primer reporte: ${listaReportes.first}');
+        }
+        if (mounted) {
+          setState(() {
+            reportes = listaReportes.map((map) => Salon.fromMap(map)).toList();
+            print('✅ Salones mapeados: ${reportes.length}');
+            for (var salon in reportes) {
+              print('  - ${salon.nombre} (${salon.edificio})');
+            }
+          });
+        }
+      }, onError: (error) {
+        print('Error escuchando reportes: $error');
+      });
+    } catch (e) {
+      print('Error cargando datos: $e');
     }
+  }
 
-    return salones.where((salon) {
-      return salon.edificio == 'Edificio $edificioSeleccionado' ||
-          salon.edificio.contains('Edificio $edificioSeleccionado');
+  int? obtenerIdEdificio(String nombre) {
+  if (nombre == 'Todos') return null; // o 0, según tu lógica
+  
+  final edificio = edificios.where((e) => e['nombre'] == nombre).firstOrNull;
+  return edificio?['id'];
+}
+
+  List<Salon> get reportesFiltrados {
+    // Filtrar por edificio
+    List<Salon> filtradosPorEdificio = reportes;
+    if (edificioSeleccionado != 'Todos') {
+      filtradosPorEdificio = reportes.where((salon) {
+        return salon.edificio == 'Edificio $edificioSeleccionado' ||
+            salon.edificio.contains('Edificio $edificioSeleccionado');
+      }).toList();
+    }
+    
+    // Filtrar por búsqueda
+    if (textoBusqueda.isEmpty) {
+      return filtradosPorEdificio;
+    }
+    
+    final busquedaMinuscula = textoBusqueda.toLowerCase();
+    return filtradosPorEdificio.where((salon) {
+      return salon.nombre.toLowerCase().contains(busquedaMinuscula) ||
+          salon.edificio.toLowerCase().contains(busquedaMinuscula);
     }).toList();
   }
 
@@ -201,6 +261,12 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           TextField(
+            controller: _buscadorController,
+            onChanged: (valor) {
+              setState(() {
+                textoBusqueda = valor;
+              });
+            },
             decoration: InputDecoration(
               hintText: 'Buscar edificio o salón...',
               prefixIcon: const Icon(Icons.search),
@@ -221,28 +287,22 @@ class _HomePageState extends State<HomePage> {
               scrollDirection: Axis.horizontal, //scroll horizontal
               children: [
                 _botonEdificio('Todos'),
-                _botonEdificio('A'),
-                _botonEdificio('E'),
-                _botonEdificio('B'),
-                _botonEdificio('J'),
-                _botonEdificio('K'),
-                _botonEdificio('W'),
-                _botonEdificio('X'),
+                ...edificios.map((edificio) => _botonEdificio(edificio['nombre'] as String)).toList(),
               ],
             ),
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: salonesFiltrados.isEmpty
+            child: reportesFiltrados.isEmpty
                 ? const Center(
                     child: Text(
                       'No hay salones disponibles para este edificio.',
                     ),
                   )
                 : ListView.builder(
-                    itemCount: salonesFiltrados.length,
+                    itemCount: reportesFiltrados.length,
                     itemBuilder: (context, index) {
-                      return _tarjetaSalon(context, salonesFiltrados[index]);
+                      return _tarjetaSalon(context, reportesFiltrados[index]);
                     },
                   ),
           ),
