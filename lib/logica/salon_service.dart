@@ -33,19 +33,4 @@ class SalonService {
       rethrow;
     }
   }
-
-  // OBTENER SALONES FILTRADOS POR EDIFICIO
-  /*Future<List<Map<String, dynamic>>> obtenerSalonesPorEdificio(int edificioId) async {
-    try {
-      final data = await _supabase
-          .from('salon')
-          .select('id, nombre, id_edificio, edificio(nombre)')
-          .eq('id_edificio', edificioId)
-          .order('nombre');
-      return List<Map<String, dynamic>>.from(data);
-    } catch (e) {
-      print('Error en obtenerSalonesPorEdificio: $e');
-      rethrow;
-    }
-  }*/
 }

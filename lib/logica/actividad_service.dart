@@ -28,15 +28,27 @@ class ActividadService {
     if (userId == null) return;
 
     try {
-      // Actualizar el registro más reciente para marcar como inactivo
-      // Esto activa el trigger que actualiza el conteo automáticamente
-      await _supabase
+      // Primero obtener el ID del registro más reciente
+      final response = await _supabase
           .from('actividad')
-          .update({'activo': false})
+          .select('id')
           .eq('id_reporte', reporteId)
           .eq('id_estudiante', userId)
           .order('fecha_hora', ascending: false)
-          .limit(1);
+          .limit(1)
+          .maybeSingle(); 
+
+      if (response == null) {
+        throw Exception('No hay registro de actividad para este usuario en este reporte');
+      }
+
+      final recordId = response['id'];
+
+      // Luego actualizar ese registro específico
+      await _supabase
+          .from('actividad')
+          .update({'activo': false})
+          .eq('id', recordId);
     } catch (e) {
       print('Error en salirDeActividad: $e');
       rethrow;
@@ -56,7 +68,9 @@ class ActividadService {
           .eq('id_estudiante', userId)
           .order('fecha_hora', ascending: false)
           .limit(1)
-          .single();
+          .maybeSingle(); // Usa maybeSingle() en lugar de single()
+
+      if (response == null) return false; // Si no hay registro, retorna false
 
       return response['activo'] ?? false;
     } catch (e) {

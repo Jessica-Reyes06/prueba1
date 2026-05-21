@@ -52,10 +52,14 @@ class ReporteService {
         'hora_fin': horaFinTimestamp,
         'esta_vacio': true,
         'total_alumnos': 0, // El trigger lo actualizará
-      }).select();
+      });
 
-      final reporteId = responseReporte[0]['id'] as int;
-      if (comentario != null && comentario.trim().isNotEmpty) {
+      // responseReporte es una lista con los datos insertados
+      final reporteId = (responseReporte as List).isNotEmpty 
+          ? responseReporte[0]['id'] as int
+          : null;
+          
+      if (reporteId != null && comentario != null && comentario.trim().isNotEmpty) {
         await _supabase.from('comentario').insert({
           'id_reporte': reporteId,
           'id_estudiante': userId,
@@ -230,12 +234,16 @@ class ReporteService {
             final datosEstudiante =
                 comentario['estudiante'] as Map<String, dynamic>?;
 
+            // Convertir la hora UTC de la BD a la zona horaria local
+            DateTime fechaUTC = DateTime.parse(comentario['fecha_hora']);
+            DateTime fechaLocal = fechaUTC.toLocal();
+
             return {
               'id': comentario['id'],
               'id_reporte': comentario['id_reporte'],
               'id_estudiante': comentario['id_estudiante'],
               'comentario': comentario['comentario'],
-              'fecha_hora': comentario['fecha_hora'],
+              'fecha_hora': fechaLocal.toIso8601String(), // Guardamos como string ISO
               'nombre_usuario':
                   datosEstudiante?['nombre'] ?? 'Usuario Desconocido',
             };
