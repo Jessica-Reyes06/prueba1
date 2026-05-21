@@ -342,25 +342,35 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                       ? parts[1].trim()
                       : horarioSeleccionado;
 
-                  // Validación: no permitir reportar horarios pasados o iguales a la hora actual
+                  // Tomamos la hora de fin del bloque y la convertimos a una
+                  // fecha de hoy para compararla con la hora actual.
                   try {
                     final ahora = DateTime.now();
-                    final sp = horaInicio.split(':');
-                    final int h = sp.isNotEmpty ? int.parse(sp[0]) : ahora.hour;
-                    final int m = sp.length > 1 ? int.parse(sp[1]) : 0;
-                    final inicio = DateTime(
+                    final partesHoraFin = horaFin.split(':');
+                    final int horaFinEntera = partesHoraFin.isNotEmpty
+                        ? int.parse(partesHoraFin[0])
+                        : ahora.hour;
+                    final int minutoFinEntero = partesHoraFin.length > 1
+                        ? int.parse(partesHoraFin[1])
+                        : 0;
+
+                    final horaFinDelBloque = DateTime(
                       ahora.year,
                       ahora.month,
                       ahora.day,
-                      h,
-                      m,
+                      horaFinEntera,
+                      minutoFinEntero,
                     );
-                    if (!inicio.isAfter(ahora)) {
+
+                    // Si la hora de fin ya pasó o es exactamente la misma,
+                    // entonces el bloque ya no está disponible.
+                    if (horaFinDelBloque.isBefore(ahora) ||
+                        horaFinDelBloque.isAtSameMomentAs(ahora)) {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'No puedes reportar un horario pasado o igual a la hora actual',
+                            'No puedes reportar un aula fuera del horario actual',
                           ),
                         ),
                       );
