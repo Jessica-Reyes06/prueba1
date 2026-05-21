@@ -12,6 +12,7 @@ class ReporteService {
     final int horas = partes.isNotEmpty ? int.parse(partes[0]) : ahora.hour;
     final int minutos = partes.length > 1 ? int.parse(partes[1]) : ahora.minute;
 
+    // Crear DateTime con la hora local
     final fechaHora = DateTime(
       ahora.year,
       ahora.month,
@@ -20,7 +21,10 @@ class ReporteService {
       minutos,
     );
 
-    return fechaHora.toIso8601String();
+    // Convertir a UTC para guardar en la BD
+    final fechaHoraUtc = fechaHora.toUtc();
+
+    return fechaHoraUtc.toIso8601String();
   }
 
   // CREAR UN REPORTE NUEVO

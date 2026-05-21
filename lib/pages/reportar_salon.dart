@@ -279,7 +279,7 @@ class _ReportarSalonSheetState extends State<ReportarSalonSheet> {
                               '16:00-17:00',
                               '17:00-18:00',
                               '18:00-19:00',
-                              '19:00-20:00',
+                              '19:00-20:00'
                             ]
                             .map(
                               (h) => DropdownMenuItem(value: h, child: Text(h)),

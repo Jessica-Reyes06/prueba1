@@ -216,18 +216,20 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            onPressed: () async {
+                            onPressed: widget.salon.disponible ? () async {
                               setState(() => estoyAqui = !estoyAqui);
                               if (estoyAqui) {
                                 await actividad.unirseAActividad(reporteId);
                               } else {
                                 await actividad.salirDeActividad(reporteId);
                               }
-                            },
+                            } : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: estoyAqui
+                              backgroundColor: widget.salon.disponible 
+                                ? (estoyAqui
                                   ? Colors.green.shade600
-                                  : Colors.blue,
+                                  : Colors.blue) 
+                                : Colors.grey.shade700,
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -254,13 +256,13 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton.icon(
-                            onPressed: () async {
+                            onPressed: widget.salon.disponible ? () async {
                               reporte.marcarSalonOcupado(reporteId);
                               final salonActualizado = widget.salon.copyWith(disponible: false);
                               Navigator.pop(context, salonActualizado);
-                            },
+                            } : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade600,
+                              backgroundColor: widget.salon.disponible ? Colors.red.shade600 : Colors.grey.shade700,
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
