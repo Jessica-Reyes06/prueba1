@@ -45,25 +45,24 @@ class ReporteService {
     final horaFinTimestamp = _formatearHoraComoTimestamp(horaFin);
 
     try {
-      final responseReporte = await _supabase.from('reporte').insert({
-        'id_salon': idSalon,
-        'id_estudiante': userId,
-        'clima_funciona': climaFunciona,
-        'fecha': DateTime.now().toIso8601String().split(
-          'T',
-        )[0], // Formato: YYYY-MM-DD
-        'hora_inicio': horaInicioTimestamp,
-        'hora_fin': horaFinTimestamp,
-        'esta_vacio': true,
-        'total_alumnos': 0, // El trigger lo actualizará
-      });
+      final responseReporte = await _supabase
+          .from('reporte')
+          .insert({
+            'id_salon': idSalon,
+            'id_estudiante': userId,
+            'clima_funciona': climaFunciona,
+            'fecha': DateTime.now().toIso8601String().split('T')[0],
+            'hora_inicio': horaInicioTimestamp,
+            'hora_fin': horaFinTimestamp,
+            'esta_vacio': true,
+            'total_alumnos': 0,
+          })
+          .select('id')
+          .single();
 
-      // responseReporte es una lista con los datos insertados
-      final reporteId = (responseReporte as List).isNotEmpty 
-          ? responseReporte[0]['id'] as int
-          : null;
-          
-      if (reporteId != null && comentario != null && comentario.trim().isNotEmpty) {
+      final reporteId = responseReporte['id'] as int;
+
+      if (comentario != null && comentario.trim().isNotEmpty) {
         await _supabase.from('comentario').insert({
           'id_reporte': reporteId,
           'id_estudiante': userId,
@@ -71,7 +70,6 @@ class ReporteService {
         });
       }
     } catch (e) {
-      print('Error en crearReporte: $e');
       rethrow;
     }
   }
@@ -79,7 +77,7 @@ class ReporteService {
   // ESCUCHAR REPORTES ACTIVOS EN TIEMPO REAL
   // Solo muestra reportes que: esta_vacio=true y estén en el rango de hora actual
   // Solo un reporte por salón (el primero creado)
-  Stream<List<Map<String, dynamic>>> escucharReportesActivos(int? idEdificio) {
+  Stream<List<Map<String, dynamic>>> escucharReportesActivos() {
     final userId = _supabase.auth.currentUser?.id;
 
     return _supabase
@@ -87,12 +85,7 @@ class ReporteService {
         .stream(primaryKey: ['id'])
         .eq('esta_vacio', true)
         .asyncMap((listaReportes) async {
-          print('🔵 Total reportes raw: ${listaReportes.length}');
-          if (listaReportes.isNotEmpty) {
-            print('   Primer reporte raw: ${listaReportes.first}');
-          }
-
-          //Obtener salones favoritos del usuario
+          // Obtener salones favoritos del usuario
           List<int> salonesFavoritosIds = [];
           if (userId != null) {
             final favoritosData = await _supabase
@@ -105,18 +98,14 @@ class ReporteService {
                 .toList();
           }
 
-          // Filtrar por fecha de hoy
+          // Filtrar por fecha de hoy (UTC)
           final hoy = DateTime.now();
           final horaActualUtc = hoy.toUtc(); // Convertir a UTC
           final diaActual = horaActualUtc.toIso8601String().split('T')[0];
-          print('📅 Día actual buscado (UTC): $diaActual');
 
           // Filtrar reportes de hoy que estén en el rango de hora
           final reportesHoy = listaReportes.where((r) {
             final fecha = r['fecha'] as String?;
-            print(
-              '   Comparando fecha: "$fecha" == "$diaActual"? ${fecha == diaActual}',
-            );
             if (fecha != diaActual) return false;
 
             final horaActual =
@@ -134,15 +123,9 @@ class ReporteService {
               horaFin = horaFin.split('T')[1].substring(0, 5); // "19:00"
             }
 
-            print(
-              '   Hora actual UTC: $horaActual, Rango: $horaInicio - $horaFin',
-            );
-
             return horaActual.compareTo(horaInicio ?? '') >= 0 &&
                 horaActual.compareTo(horaFin ?? '') <= 0;
           }).toList();
-
-          print('🟢 Reportes hoy en rango de hora: ${reportesHoy.length}');
 
           // Agrupar por salón y tomar solo el primero (más antiguo)
           final Map<int, Map<String, dynamic>> reportesPorSalon = {};
@@ -160,17 +143,7 @@ class ReporteService {
               final edificioMap =
                   salonMap?['edificio'] as Map<String, dynamic>?;
 
-              print('🔍 Reporte ID: ${reporte['id']}');
-              print('   salonMap: $salonMap');
-              print('   edificioMap: $edificioMap');
-
-              final idEdificioReporte = salonMap?['id_edificio'] as int?;
-
               final esFavorito = salonesFavoritosIds.contains(idSalon);
-
-              if (idEdificio != null && idEdificioReporte != idEdificio) {
-                continue; // Se salta este reporte y va al siguiente
-              }
 
               //Vista salon
               reportesPorSalon[idSalon] = {
@@ -201,8 +174,8 @@ class ReporteService {
           .from('reporte')
           .update({'esta_vacio': false})
           .eq('id', reporteId);
+
     } catch (e) {
-      print('Error en marcarSalonOcupado: $e');
       rethrow;
     }
   }
@@ -219,7 +192,6 @@ class ReporteService {
         'comentario': textoComentario,
       });
     } catch (e) {
-      print('Error en agregarComentario: $e');
       rethrow;
     }
   }

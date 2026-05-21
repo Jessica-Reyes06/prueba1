@@ -41,7 +41,6 @@ class AuthService {
         password: password,
       );
     } catch (e) {
-      print('Error en login: $e.message');
       rethrow;
     }
   }
@@ -69,7 +68,6 @@ class AuthService {
         ); 
       }
     } catch (e) {
-      print('Error en registrarUsuario: $e.message');
       rethrow;
     }
   }
@@ -89,7 +87,6 @@ bool contrasenaSegura(String contrasena) {
         ),
       );
     } catch (e) {
-      print('Error en actualizarUsername: $e.message');
       rethrow;
     }
   }

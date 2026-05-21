@@ -11,7 +11,6 @@ class SalonService {
       final data = await _supabase.from('edificio').select().order('nombre');
       return List<Map<String, dynamic>>.from(data);
     } catch (e) {
-      print('Error en obtenerEdificios: $e');
       rethrow;
     }
   }
@@ -29,7 +28,6 @@ class SalonService {
       };
     }).toList();
     } catch (e) {
-      print('Error en obtenerSalones: $e');
       rethrow;
     }
   }

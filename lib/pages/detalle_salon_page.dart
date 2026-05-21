@@ -38,7 +38,8 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
   @override
   void dispose() {
     _comentariosSubscription.cancel(); // Cancelar suscripción al salir
-    _conteoSubscription.cancel(); // Cancelar suscripción al salir
+    _conteoSubscription.cancel(); 
+    comentarioController.dispose(); 
     super.dispose();
   }
 
@@ -51,29 +52,22 @@ class _DetalleSalonPageState extends State<DetalleSalonPage> {
       });
       // Escuchar comentarios en tiempo real del reporte específico
       _comentariosSubscription = reporte.escucharComentarios(reporteId).listen((listaComentarios) {
-      print('🔍 Comentarios del reporte $reporteId: $listaComentarios');
-      print('📊 Cantidad de comentarios: ${listaComentarios.length}');
       if (mounted) {
         setState(() {
           comentarios = listaComentarios;
         });
       }
       }, onError: (error) {
-        print('Error escuchando comentarios: $error');
       });
-    } catch (e) {
-      print('Error cargando datos: $e');
-    }
+    } catch (e) {}
     // Escuchar conteo de personas en tiempo real 
     _conteoSubscription = reporte.actualizarConteoActividad(reporteId).listen((conteo) {
-    print('👥 Conteo de personas en el reporte $reporteId: $conteo');
     if (mounted) {
         setState(() {
           conteoPersonas = conteo;
         });
       }
     }, onError: (error) {
-      print('Error escuchando conteo de personas: $error');
     });
 
   }

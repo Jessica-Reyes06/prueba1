@@ -26,7 +26,6 @@ class EstudianteService {
           .single();
       return response;
     } catch (e) {
-      print('ERROR obteniendo estudiante: $e');
       return null;
     }
   }
@@ -48,7 +47,6 @@ class EstudianteService {
           .update({'username': nuevoUsername})
           .eq('id', usuarioId);
     } catch (e) {
-      print('ERROR actualizando username: $e');
       rethrow;
     }
   }
@@ -73,7 +71,6 @@ class EstudianteService {
         };
       }));
     } catch (e) {
-      print('Error obteniendo favoritos: $e');
       return [];
     }
   }
@@ -94,7 +91,6 @@ class EstudianteService {
         'nombre': item['edificio']['nombre'] as String,
       }));
     } catch (e) {
-      print('Error obteniendo favoritos: $e');
       return [];
     }
   }
@@ -120,7 +116,6 @@ class EstudianteService {
             .eq('id_edificio', edificioId);
       }
     } catch (e) {
-      print('Error en toggleEdificioFavorito: $e');
       rethrow;
     }
   }
@@ -146,42 +141,7 @@ class EstudianteService {
             .eq('id_salon', salonId);
       }
     } catch (e) {
-      print('Error en toggleSalonFavorito: $e');
       rethrow;
     }
   }
 }
-
-/*
-  // Agregar salón favorito
-  Future<void> agregarFavorito(String idSalon) async {
-    try {
-      final usuarioId = _auth.usuarioId;
-      if (usuarioId == null) return;
-      
-      await _supabase
-          .from('salon_favorito')
-          .insert({'id_estudiante': usuarioId, 'id_salon': idSalon});
-    } catch (e) {
-      print('Error agregando favorito: $e');
-      rethrow;
-    }
-  }
-
-  // Eliminar salón favorito
-  Future<void> eliminarFavorito(String idSalon) async {
-    try {
-      final usuarioId = _auth.usuarioId;
-      if (usuarioId == null) return;
-      
-      await _supabase
-          .from('favoritos')
-          .delete()
-          .eq('id_usuario', usuarioId)
-          .eq('id_salon', idSalon);
-    } catch (e) {
-      print('Error eliminando favorito: $e');
-      rethrow;
-    }
-  }
-}*/

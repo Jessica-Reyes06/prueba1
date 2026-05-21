@@ -5,7 +5,6 @@ import 'perfil_page.dart'; //para ir a la pantalla del perfil
 import 'detalle_salon_page.dart'; //para ir a la pantalla del detalle del salón
 import 'salon_model.dart'; //para usar la clase Salon y crear objetos de salón
 import 'reportar_salon.dart';
-//import '../logica/estudiante_service.dart';
 import '../logica/reporte_service.dart';
 import '../logica/salon_service.dart';
 
@@ -21,7 +20,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  //final EstudianteService estudiante = EstudianteService();
   final ReporteService reporte = ReporteService();
   final SalonService salon = SalonService();
   
@@ -29,7 +27,6 @@ class _HomePageState extends State<HomePage> {
   String edificioSeleccionado = 'Todos';
   int paginaActual = 0;
   String textoBusqueda = '';
-  //List<Map<String, dynamic>> salonesFavoritos = [];
   List<Map<String, dynamic>> edificios = [];
   List<Salon> reportes = [];
   late StreamSubscription<List<Map<String, dynamic>>> _reportesSubscription;
@@ -59,35 +56,17 @@ class _HomePageState extends State<HomePage> {
       }
       
       // Escuchar reportes en tiempo real
-      _reportesSubscription = reporte.escucharReportesActivos(null).listen((listaReportes) {
-        print('🔍 Datos recibidos del Stream: $listaReportes');
-        print('📊 Cantidad de reportes: ${listaReportes.length}');
-        if (listaReportes.isNotEmpty) {
-          print('📋 Primer reporte: ${listaReportes.first}');
-        }
+      _reportesSubscription = reporte.escucharReportesActivos().listen((listaReportes) {
         if (mounted) {
           setState(() {
             reportes = listaReportes.map((map) => Salon.fromMap(map)).toList();
-            print('✅ Salones mapeados: ${reportes.length}');
-            for (var salon in reportes) {
-              print('  - ${salon.nombre} (${salon.edificio})');
-            }
           });
         }
       }, onError: (error) {
-        print('Error escuchando reportes: $error');
       });
     } catch (e) {
-      print('Error cargando datos: $e');
     }
   }
-
-  int? obtenerIdEdificio(String nombre) {
-  if (nombre == 'Todos') return null; // o 0, según tu lógica
-  
-  final edificio = edificios.where((e) => e['nombre'] == nombre).firstOrNull;
-  return edificio?['id'];
-}
 
   List<Salon> get reportesFiltrados {
     // Filtrar por edificio

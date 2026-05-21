@@ -17,7 +17,6 @@ class ActividadService {
         'activo': true, // Indicamos que entramos al salón
       });
     } catch (e) {
-      print('Error en unirseAActividad: $e');
       rethrow;
     }
   }
@@ -50,7 +49,6 @@ class ActividadService {
           .update({'activo': false})
           .eq('id', recordId);
     } catch (e) {
-      print('Error en salirDeActividad: $e');
       rethrow;
     }
   }
@@ -74,7 +72,6 @@ class ActividadService {
 
       return response['activo'] ?? false;
     } catch (e) {
-      print('Error obteniendo estado de actividad: $e');
       return false;
     }
   }
